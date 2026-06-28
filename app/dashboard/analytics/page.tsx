@@ -62,7 +62,7 @@ export default function AnalyticsPage() {
     return (
       <div className="flex h-[60vh] w-full flex-col items-center justify-center gap-2">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-600 dark:text-emerald-400" />
-        <p className="text-sm text-zinc-550">Loading analytics...</p>
+        <p className="text-sm text-zinc-500">Loading analytics...</p>
       </div>
     );
   }
@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
         <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50 mb-2">
           <ArrowLeft className="h-3 w-3" /> Back to Dashboard
         </Link>
-        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-550">Analytics</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Analytics</h2>
         <p className="text-zinc-500 dark:text-zinc-400">Analyze your spending trends and distributions.</p>
       </div>
 
@@ -122,7 +122,7 @@ export default function AnalyticsPage() {
             ) : (
               <div className="flex-1 flex items-center justify-center border border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg">
                 <div className="text-center text-zinc-500">
-                  <TrendingUp className="mx-auto h-8 w-8 text-zinc-450 mb-2" />
+                  <TrendingUp className="mx-auto h-8 w-8 text-zinc-400 mb-2" />
                   <p className="text-sm">Charts will populate once expense data is recorded.</p>
                 </div>
               </div>
@@ -166,7 +166,7 @@ export default function AnalyticsPage() {
             ) : (
               <div className="flex-1 flex items-center justify-center border border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg">
                 <div className="text-center text-zinc-500">
-                  <TrendingUp className="mx-auto h-8 w-8 text-zinc-450 mb-2" />
+                  <TrendingUp className="mx-auto h-8 w-8 text-zinc-400 mb-2" />
                   <p className="text-sm">Breakdown details will populate here.</p>
                 </div>
               </div>

@@ -63,7 +63,7 @@ export default function LogsPage() {
         );
       case 'failed':
         return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:bg-rose-950/30 dark:text-rose-450">
+          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700 dark:bg-rose-950/30 dark:text-rose-400">
             <XCircle className="h-3 w-3" /> Failed
           </span>
         );
@@ -83,7 +83,7 @@ export default function LogsPage() {
           <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50 mb-2">
             <ArrowLeft className="h-3 w-3" /> Back to Dashboard
           </Link>
-          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-550">Message Logs</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Message Logs</h2>
           <p className="text-zinc-500 dark:text-zinc-400">Incoming WhatsApp messages and their parsing results.</p>
         </div>
         <Button onClick={fetchLogs} variant="outline" size="sm" className="gap-2">
@@ -100,11 +100,11 @@ export default function LogsPage() {
           {loading && logs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-2">
               <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
-              <p className="text-sm text-zinc-550">Loading logs...</p>
+              <p className="text-sm text-zinc-500">Loading logs...</p>
             </div>
           ) : logs.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left text-sm text-zinc-550 dark:text-zinc-400">
+              <table className="w-full border-collapse text-left text-sm text-zinc-500 dark:text-zinc-400">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-800 text-xs font-semibold uppercase text-zinc-400">
                     <th className="py-3 px-4">Time</th>
@@ -142,7 +142,7 @@ export default function LogsPage() {
               </table>
             </div>
           ) : (
-            <div className="text-center py-12 text-zinc-500 dark:text-zinc-450">
+            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
               <p>No messages received yet.</p>
               <p className="text-sm mt-1 text-zinc-400">Once WhatsApp is connected, all incoming requests will be logged here.</p>
             </div>

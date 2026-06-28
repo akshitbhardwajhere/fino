@@ -48,7 +48,7 @@ export default function CategoriesPage() {
     return (
       <div className="flex h-[60vh] w-full flex-col items-center justify-center gap-2">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-600 dark:text-emerald-400" />
-        <p className="text-sm text-zinc-550">Loading categories...</p>
+        <p className="text-sm text-zinc-500">Loading categories...</p>
       </div>
     );
   }
@@ -59,7 +59,7 @@ export default function CategoriesPage() {
         <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50 mb-2">
           <ArrowLeft className="h-3 w-3" /> Back to Dashboard
         </Link>
-        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-550">Categories</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Categories</h2>
         <p className="text-zinc-500 dark:text-zinc-400">Default categories configured for automatic AI mapping.</p>
       </div>
 

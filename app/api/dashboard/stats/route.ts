@@ -4,6 +4,7 @@ import { ExpenseRepository } from '@/repositories/expense';
 import { db } from '@/lib/db/client';
 import { messageLogs } from '@/lib/db/schema';
 import { sql, eq } from 'drizzle-orm';
+import { whatsappService } from '@/services/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,6 +92,8 @@ export async function GET() {
       };
     }).sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount));
 
+    const whatsappConnected = whatsappService.getStatus().status === 'connected';
+
     return NextResponse.json({
       timezone,
       currency,
@@ -102,6 +105,7 @@ export async function GET() {
       matchedMessages,
       recentExpenses: topRecent,
       categoryBreakdown,
+      whatsappConnected,
     });
   } catch (error) {
     console.error('Failed to get dashboard stats:', error);

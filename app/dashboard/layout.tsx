@@ -103,10 +103,10 @@ export default function DashboardLayout({
                       'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
                       isActive
                         ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                        : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-850 dark:hover:text-zinc-100'
+                        : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100'
                     )}
                   >
-                    <item.icon className={cn('h-4 w-4', isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-450')} />
+                    <item.icon className={cn('h-4 w-4', isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400')} />
                     {item.name}
                   </Link>
                 );

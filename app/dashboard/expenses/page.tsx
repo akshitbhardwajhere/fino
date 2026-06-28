@@ -101,7 +101,7 @@ export default function ExpensesPage() {
           <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50 mb-2">
             <ArrowLeft className="h-3 w-3" /> Back to Dashboard
           </Link>
-          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-550">Expenses</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Expenses</h2>
           <p className="text-zinc-500 dark:text-zinc-400">View and manage all your tracked expenses.</p>
         </div>
         <Button onClick={fetchExpenses} variant="outline" size="sm" className="gap-2">
@@ -147,11 +147,11 @@ export default function ExpensesPage() {
           {loading && expenses.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-2">
               <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
-              <p className="text-sm text-zinc-550">Loading transactions...</p>
+              <p className="text-sm text-zinc-500">Loading transactions...</p>
             </div>
           ) : expenses.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left text-sm text-zinc-550 dark:text-zinc-400">
+              <table className="w-full border-collapse text-left text-sm text-zinc-500 dark:text-zinc-400">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-800 text-xs font-semibold uppercase text-zinc-400">
                     <th className="py-3 px-4">Date</th>
@@ -195,7 +195,7 @@ export default function ExpensesPage() {
               </table>
             </div>
           ) : (
-            <div className="text-center py-12 text-zinc-500 dark:text-zinc-450">
+            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
               <p>No expenses found matching the criteria.</p>
               <p className="text-sm mt-1 text-zinc-400">Try sending an expense from WhatsApp! E.g. &quot;150 for dinner&quot;</p>
             </div>

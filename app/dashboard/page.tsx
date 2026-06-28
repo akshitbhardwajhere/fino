@@ -38,6 +38,7 @@ interface DashboardStats {
     percentage: number;
     color: string;
   }>;
+  whatsappConnected: boolean;
 }
 
 export default function DashboardPage() {
@@ -86,7 +87,7 @@ export default function DashboardPage() {
     return (
       <div className="flex h-[60vh] w-full flex-col items-center justify-center gap-2">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-600 dark:text-emerald-400" />
-        <p className="text-sm text-zinc-550">Loading dashboard metrics...</p>
+        <p className="text-sm text-zinc-500">Loading dashboard metrics...</p>
       </div>
     );
   }
@@ -98,7 +99,7 @@ export default function DashboardPage() {
       {/* Header with Welcome */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-550">Dashboard</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Dashboard</h2>
           <p className="text-zinc-500 dark:text-zinc-400">
             Welcome to Fino, your personal WhatsApp automation assistant.
           </p>
@@ -106,7 +107,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2">
           <Link href="/dashboard/settings">
             <Button variant="outline" size="sm">
-              Configure AI
+              Settings
             </Button>
           </Link>
           <Link href="/dashboard/expenses">
@@ -118,22 +119,24 @@ export default function DashboardPage() {
       </div>
 
       {/* WhatsApp Alert for MVP Connection */}
-      <div className="flex items-start gap-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
-        <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-550" />
-        <div className="flex-1 space-y-1">
-          <h4 className="font-semibold text-amber-900 dark:text-amber-400">WhatsApp Link Required</h4>
-          <p className="text-sm text-amber-700 dark:text-amber-550">
-            To start tracking expenses automatically from messages, link your WhatsApp account.
-          </p>
-          <div className="pt-2">
-            <Link href="/dashboard/settings">
-              <Button size="sm" variant="outline" className="border-amber-250 hover:bg-amber-100/50 dark:border-amber-800 text-amber-850 hover:text-amber-900 dark:text-amber-400 dark:hover:bg-amber-950/40">
-                <QrCode className="mr-2 h-4 w-4" /> Scan QR Code
-              </Button>
-            </Link>
+      {stats && !stats.whatsappConnected && (
+        <div className="flex items-start gap-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+          <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-400" />
+          <div className="flex-1 space-y-1">
+            <h4 className="font-semibold text-amber-900 dark:text-amber-400">WhatsApp Link Required</h4>
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              To start tracking expenses automatically from messages, link your WhatsApp account.
+            </p>
+            <div className="pt-2">
+              <Link href="/dashboard/settings">
+                <Button size="sm" variant="outline" className="border-amber-200 hover:bg-amber-100/50 dark:border-amber-800 text-amber-800 hover:text-amber-900 dark:text-amber-400 dark:hover:bg-amber-950/40">
+                  <QrCode className="mr-2 h-4 w-4" /> Scan QR Code
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Metrics Row */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -143,7 +146,7 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
               Today&apos;s Spending
             </CardTitle>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-450">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
               <TrendingUp className="h-4 w-4" />
             </div>
           </CardHeader>
@@ -163,7 +166,7 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
               This Month
             </CardTitle>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-450">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400">
               <Receipt className="h-4 w-4" />
             </div>
           </CardHeader>
@@ -276,7 +279,7 @@ export default function DashboardPage() {
                 </div>
               ))
             ) : (
-              <p className="text-sm text-zinc-550 py-4 text-center">No category breakdown available.</p>
+              <p className="text-sm text-zinc-500 py-4 text-center">No category breakdown available.</p>
             )}
           </CardContent>
         </Card>
