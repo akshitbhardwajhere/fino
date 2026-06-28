@@ -34,6 +34,42 @@ export class WhatsAppService {
   }
 
   /**
+   * Resets the WhatsApp session by ending the current connection, deleting session files, and reinitializing.
+   */
+  public async resetSession() {
+    logger.info('Resetting WhatsApp session...');
+    
+    // Close current socket if active
+    if (this.sock) {
+      try {
+        this.sock.end(undefined);
+      } catch (err) {
+        logger.error(err, 'Error closing active WhatsApp socket');
+      }
+      this.sock = null;
+    }
+
+    this.status = 'disconnected';
+    this.qrCode = null;
+
+    // Delete credentials directory/files
+    const sessionPath = process.env.WHATSAPP_SESSION_PATH || './.wwebjs_auth';
+    const fs = await import('fs');
+    if (fs.existsSync(sessionPath)) {
+      try {
+        fs.rmSync(sessionPath, { recursive: true, force: true });
+        logger.info(`Session files deleted at path: ${sessionPath}`);
+      } catch (err) {
+        logger.error(err, `Failed to delete session files at ${sessionPath}`);
+      }
+    }
+
+    // Reinitialize
+    await this.initialize();
+  }
+
+
+  /**
    * Initializes Baileys WhatsApp client and registers event hooks
    */
   public async initialize() {

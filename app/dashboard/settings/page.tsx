@@ -17,6 +17,7 @@ export default function SettingsPage() {
   const [waStatus, setWaStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -81,6 +82,21 @@ export default function SettingsPage() {
       console.error('Failed to save settings:', err);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleRefreshQr = async () => {
+    setIsRefreshing(true);
+    try {
+      const res = await fetch('/api/whatsapp/reset', { method: 'POST' });
+      if (res.ok) {
+        // Reset QR display immediately to indicate regeneration started
+        setQrCode(null);
+      }
+    } catch (err) {
+      console.error('Failed to reset WhatsApp session:', err);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -288,9 +304,11 @@ export default function SettingsPage() {
                 variant="outline" 
                 size="sm" 
                 className="w-full gap-2"
-                disabled={waStatus === 'connected' || isLoadingStatus}
+                onClick={handleRefreshQr}
+                disabled={waStatus === 'connected' || isLoadingStatus || isRefreshing}
               >
-                <RefreshCw className="h-3.5 w-3.5" /> Refresh QR Code
+                <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Resetting...' : 'Refresh QR Code'}
               </Button>
             </CardFooter>
           </Card>
