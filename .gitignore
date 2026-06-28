@@ -45,3 +45,4 @@ next-env.d.ts
 /.baileys_auth
 
 prompts.txt
+bot_debug.log

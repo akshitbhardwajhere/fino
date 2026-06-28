@@ -4,7 +4,6 @@ import { ExpenseRepository } from '@/repositories/expense';
 import { db } from '@/lib/db/client';
 import { messageLogs } from '@/lib/db/schema';
 import { sql, eq, and } from 'drizzle-orm';
-import { whatsappService } from '@/services/whatsapp';
 import { auth } from '@clerk/nextjs/server';
 
 export const dynamic = 'force-dynamic';
@@ -106,7 +105,16 @@ export async function GET() {
       };
     }).sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount));
 
-    const whatsappConnected = whatsappService.getStatus().status === 'connected';
+    let whatsappConnected = false;
+    try {
+      const botRes = await fetch('http://localhost:3005/status');
+      if (botRes.ok) {
+        const data = await botRes.json();
+        whatsappConnected = data.status === 'connected';
+      }
+    } catch (err) {
+      whatsappConnected = false;
+    }
 
     return NextResponse.json({
       timezone,
