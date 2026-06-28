@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./public/fino_banner.png" alt="Fino - Open-Source AI Expense Tracker via WhatsApp" width="100%" />
+  <img src="./public/fino_banner.png" alt="Fino - Open-Source AI Expense Tracker via WhatsApp" width="500" />
 </p>
 
 # Fino — Open-Source AI Expense Tracker via WhatsApp
