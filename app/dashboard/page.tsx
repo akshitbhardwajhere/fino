@@ -1,17 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   TrendingUp,
   QrCode,
   ArrowRight,
-  Plus,
   History,
   AlertTriangle,
   Receipt,
-  Clock,
   Loader2,
+  Settings,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -107,12 +106,13 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2">
           <Link href="/dashboard/settings">
             <Button variant="outline" size="sm">
-              Settings
+              <Settings className="h-4 w-4" />
             </Button>
           </Link>
           <Link href="/dashboard/expenses">
             <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" /> Add Expense
+              <History className="h-4 w-4" />
+              <span className='font-semibold'>Expenses</span>
             </Button>
           </Link>
         </div>
@@ -179,7 +179,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Metric 3 */}
-        <Card className="hover:shadow-md transition-shadow duration-200">
+        {/* <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
               Messages Logged
@@ -194,10 +194,10 @@ export default function DashboardPage() {
               {stats ? stats.matchedMessages : 0} parsed successfully as expenses
             </p>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Metric 4 */}
-        <Card className="hover:shadow-md transition-shadow duration-200">
+        {/* <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
               Daily Summary Time
@@ -212,7 +212,7 @@ export default function DashboardPage() {
               Timezone: {stats ? stats.timezone : 'Asia/Kolkata'}
             </p>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
 
       {/* Main Grid Content */}
