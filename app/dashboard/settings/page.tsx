@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import Image from 'next/image';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, QrCode, RefreshCw, Brain, Globe, DollarSign, Clock } from 'lucide-react';
+import { ArrowLeft, Save, QrCode, RefreshCw, Brain, Globe, DollarSign, Clock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SettingsPage() {
@@ -13,6 +12,39 @@ export default function SettingsPage() {
   const [currency, setCurrency] = useState('INR (₹)');
   const [summaryTime, setSummaryTime] = useState('23:00');
   const [isSaved, setIsSaved] = useState(false);
+
+  const [waStatus, setWaStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch('/api/whatsapp/status');
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (active) {
+          setWaStatus(data.status);
+          setQrCode(data.qrCode);
+          setIsLoadingStatus(false);
+        }
+      } catch {
+        if (active) {
+          setWaStatus('disconnected');
+          setQrCode(null);
+          setIsLoadingStatus(false);
+        }
+      }
+    };
+
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 3000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleSave = () => {
     setIsSaved(true);
@@ -167,31 +199,64 @@ export default function SettingsPage() {
                   <QrCode className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   <div>
                     <CardTitle>WhatsApp Link</CardTitle>
-                    <CardDescription>Scan QR Code to pair</CardDescription>
+                    <CardDescription>
+                      {waStatus === 'connected' ? 'Session active' : 'Scan QR Code to pair'}
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center space-y-4">
-                <div className="relative border-4 border-dashed border-zinc-100 rounded-2xl overflow-hidden p-2 dark:border-zinc-800 bg-white max-w-[240px]">
-                  <Image
-                    src="/whatsapp_qr_mockup.png"
-                    alt="WhatsApp QR Code Mockup"
-                    width={220}
-                    height={220}
-                    className="rounded-xl filter grayscale"
-                    priority
-                  />
-                </div>
-                <div className="text-center space-y-1 px-2">
-                  <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Pairing Code Pending</p>
-                  <p className="text-xxs text-zinc-400 leading-normal">
-                    Open WhatsApp on your phone, go to Linked Devices &gt; Link a Device, and scan the QR code above.
-                  </p>
-                </div>
+                {isLoadingStatus ? (
+                  <div className="flex h-[220px] w-[220px] items-center justify-center rounded-xl bg-zinc-50 dark:bg-zinc-950/40">
+                    <RefreshCw className="h-6 w-6 animate-spin text-zinc-400" />
+                  </div>
+                ) : waStatus === 'connected' ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 mb-4 animate-pulse">
+                      <CheckCircle className="h-8 w-8" />
+                    </div>
+                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-50 text-sm">WhatsApp Connected</h3>
+                    <p className="text-xs text-zinc-500 mt-1 max-w-[180px]">
+                      Your account is linked. Try sending expense messages to start tracking.
+                    </p>
+                  </div>
+                ) : qrCode ? (
+                  <div className="relative border-4 border-dashed border-zinc-100 rounded-2xl overflow-hidden p-2 dark:border-zinc-850 bg-white max-w-[240px]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={qrCode}
+                      alt="WhatsApp Link QR Code"
+                      width={220}
+                      height={220}
+                      className="rounded-xl"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-6 text-center h-[220px] w-[220px] rounded-xl bg-zinc-50 dark:bg-zinc-950/40">
+                    <RefreshCw className="h-6 w-6 animate-spin text-emerald-600 dark:text-emerald-400 mb-3" />
+                    <span className="text-xs font-medium text-zinc-500">Generating QR...</span>
+                  </div>
+                )}
+                
+                {waStatus !== 'connected' && (
+                  <div className="text-center space-y-1 px-2">
+                    <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                      {waStatus === 'connecting' ? 'Ready to Scan' : 'Pairing Code Pending'}
+                    </p>
+                    <p className="text-xxs text-zinc-450 dark:text-zinc-400 leading-normal">
+                      Open WhatsApp on your phone, go to Linked Devices &gt; Link a Device, and scan the QR code above.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </div>
             <CardFooter className="border-t border-zinc-100 p-4 dark:border-zinc-800 flex justify-center">
-              <Button variant="outline" size="sm" className="w-full gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full gap-2"
+                disabled={waStatus === 'connected' || isLoadingStatus}
+              >
                 <RefreshCw className="h-3.5 w-3.5" /> Refresh QR Code
               </Button>
             </CardFooter>

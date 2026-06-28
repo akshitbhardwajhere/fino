@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -39,8 +39,30 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Mock WhatsApp connection state for Milestone 1
-  const isWhatsAppConnected = false; 
+  const [isWhatsAppConnected, setIsWhatsAppConnected] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const checkStatus = async () => {
+      try {
+        const res = await fetch('/api/whatsapp/status');
+        if (res.ok) {
+          const data = await res.json();
+          if (active) {
+            setIsWhatsAppConnected(data.status === 'connected');
+          }
+        }
+      } catch {
+        if (active) setIsWhatsAppConnected(false);
+      }
+    };
+    checkStatus();
+    const interval = setInterval(checkStatus, 5000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950">
