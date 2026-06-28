@@ -164,12 +164,39 @@ export class WhatsAppService {
 
           logger.info(`WhatsApp message received from ${remoteJid}: "${text}"`);
 
-          // Look up user settings by whatsappJid
+          try {
+            const fs = await import('fs');
+            fs.appendFileSync(
+              './bot_debug.log',
+              `[${new Date().toISOString()}] Received from: ${remoteJid} | Text: ${text} | MSG: ${JSON.stringify(msg, null, 2)}\n`
+            );
+          } catch (e) {
+            logger.error(e, 'Failed to write to bot_debug.log');
+          }
+
+          // Look up user settings by whatsappJid (check alternate JID first if present)
           const settingsRepo = new SettingsRepository();
-          const userSettings = await settingsRepo.getSettingsByWhatsappJid(remoteJid);
+          const jidsToTry = [remoteJid];
+          if (msg.key.remoteJidAlt) {
+            jidsToTry.unshift(msg.key.remoteJidAlt);
+          }
+
+          let userSettings = null;
+          for (const jid of jidsToTry) {
+            userSettings = await settingsRepo.getSettingsByWhatsappJid(jid);
+            if (userSettings) break;
+          }
 
           if (!userSettings) {
             logger.warn(`WhatsApp number ${remoteJid} is not linked to any user settings.`);
+
+            try {
+              const fs = await import('fs');
+              fs.appendFileSync(
+                './bot_debug.log',
+                `[${new Date().toISOString()}] WARN: ${remoteJid} is not linked to any settings. Database lookup returned null.\n`
+              );
+            } catch (e) {}
             
             // Create a general un-associated log
             try {

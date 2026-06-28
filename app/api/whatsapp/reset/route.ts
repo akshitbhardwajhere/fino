@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { whatsappService } from '@/services/whatsapp';
 import { auth } from '@clerk/nextjs/server';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +10,19 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await whatsappService.resetSession();
+    try {
+      const botRes = await fetch('http://localhost:3005/reset', { method: 'POST' });
+      if (!botRes.ok) {
+        throw new Error('Failed to reset session in bot process');
+      }
+    } catch (err: any) {
+      console.error('Error contacting WhatsApp bot process:', err);
+      return NextResponse.json(
+        { success: false, error: 'WhatsApp bot service is currently unreachable' },
+        { status: 502 }
+      );
+    }
+
     return NextResponse.json({ success: true, message: 'WhatsApp session reset successfully' });
   } catch (error: any) {
     console.error('Error resetting WhatsApp session:', error);

@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { whatsappService } from '@/services/whatsapp';
 import QRCode from 'qrcode';
 import { auth } from '@clerk/nextjs/server';
 
@@ -12,7 +11,20 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { status, qr } = whatsappService.getStatus();
+    let status = 'disconnected';
+    let qr: string | null = null;
+
+    try {
+      const botRes = await fetch('http://localhost:3005/status');
+      if (botRes.ok) {
+        const data = await botRes.json();
+        status = data.status;
+        qr = data.qr;
+      }
+    } catch (err) {
+      // Bot is not running or unreachable
+      status = 'disconnected';
+    }
 
     let qrCodeDataUrl: string | null = null;
 

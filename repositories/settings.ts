@@ -1,7 +1,7 @@
 import { db } from '@/lib/db/client';
 import { settings } from '@/lib/db/schema';
 import { type Settings, type NewSettings } from '@/types/db';
-import { eq } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 
 export class SettingsRepository {
   /**
@@ -79,10 +79,11 @@ export class SettingsRepository {
    * Retrieve settings by WhatsApp JID link.
    */
   async getSettingsByWhatsappJid(whatsappJid: string): Promise<Settings | null> {
+    const cleanJid = whatsappJid.split('@')[0];
     const [existing] = await db
       .select()
       .from(settings)
-      .where(eq(settings.whatsappJid, whatsappJid))
+      .where(like(settings.whatsappJid, `${cleanJid}@%`))
       .limit(1);
 
     return existing || null;
