@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, QrCode, RefreshCw, Brain, Globe, DollarSign, Clock, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Save, QrCode, RefreshCw, Globe, DollarSign, Clock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SettingsPage() {
@@ -115,7 +115,7 @@ export default function SettingsPage() {
         </Button>
       </div>      <div className="grid gap-6 md:grid-cols-3">
         {/* Left Column - Core Configurations */}
-        <div className="md:col-span-2 space-y-6">
+        <div className="md:col-span-2 space-y-6 order-2 md:order-1">
           {/* Card 2: Regional Preferences */}
           <Card>
             <CardHeader>
@@ -181,7 +181,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Right Column - WhatsApp Connection Status */}
-        <div className="space-y-6">
+        <div className="space-y-6 order-1 md:order-2">
           <Card className="h-full flex flex-col justify-between">
             <div>
               <CardHeader>

@@ -1,25 +1,28 @@
-import Groq from 'groq-sdk';
-import { logger } from '@/utils/logger';
+import Groq from "groq-sdk";
+import { logger } from "@/utils/logger";
 
 // Retrieve Groq API key from environment
 const apiKey = process.env.WhatsApp_Chatbot_API_KEY || process.env.GROQ_API_KEY;
 
 if (!apiKey) {
-  logger.warn('Groq API Key (WhatsApp_Chatbot_API_KEY or GROQ_API_KEY) is missing in environment variables.');
+  logger.warn(
+    "Groq API Key (WhatsApp_Chatbot_API_KEY or GROQ_API_KEY) is missing in environment variables.",
+  );
 }
 
 const groq = new Groq({
-  apiKey: apiKey || '',
+  apiKey: apiKey || "",
 });
 
 export interface ParsedExpense {
   amount: number;
-  category: 'Food' | 'Transport' | 'Utilities' | 'Travel' | 'Entertainment' | 'Other';
+  category:
+    "Food" | "Transport" | "Utilities" | "Travel" | "Entertainment" | "Other";
   description: string;
 }
 
 export interface ParsedMessage {
-  intent: 'track_expense' | 'other';
+  intent: "track_expense" | "other";
   expense: ParsedExpense | null;
   reply: string;
 }
@@ -30,11 +33,14 @@ export class GroqService {
    */
   public static async parseMessage(text: string): Promise<ParsedMessage> {
     if (!apiKey) {
-      logger.error('Cannot parse message with Groq: API key is not configured.');
+      logger.error(
+        "Cannot parse message with Groq: API key is not configured.",
+      );
       return {
-        intent: 'other',
+        intent: "other",
         expense: null,
-        reply: '⚠️ AI Parser Configuration Error: Groq API key is not set on the server.',
+        reply:
+          "⚠️ AI Parser Configuration Error: Groq API key is not set on the server.",
       };
     }
 
@@ -44,7 +50,7 @@ export class GroqService {
       const completion = await groq.chat.completions.create({
         messages: [
           {
-            role: 'system',
+            role: "system",
             content: `You are Fino, a personal WhatsApp automation assistant. Your job is to classify the intent of user messages and extract structured data.
 Currently, your primary module is an Expense Tracker.
 Valid categories: Food, Transport, Utilities, Travel, Entertainment, Other.
@@ -66,18 +72,18 @@ Rules for parsing:
 - Do not add any text before or after the JSON output.`,
           },
           {
-            role: 'user',
+            role: "user",
             content: text,
           },
         ],
-        model: 'llama-3.3-70b-versatile',
-        response_format: { type: 'json_object' },
+        model: "llama-3.3-70b-versatile",
+        response_format: { type: "json_object" },
         temperature: 0.1,
       });
 
       const responseText = completion.choices[0]?.message?.content;
       if (!responseText) {
-        throw new Error('Groq returned an empty response.');
+        throw new Error("Groq returned an empty response.");
       }
 
       logger.info(`Groq response received: ${responseText}`);
@@ -85,11 +91,12 @@ Rules for parsing:
 
       return parsed;
     } catch (error) {
-      logger.error(error, 'Error parsing message with Groq AI');
+      logger.error(error, "Error parsing message with Groq AI");
       return {
-        intent: 'other',
+        intent: "other",
         expense: null,
-        reply: '🤖 Sorry, I encountered an issue analyzing your message. Please try again.',
+        reply:
+          "🤖 Sorry, I encountered an issue analyzing your message. Please try again.",
       };
     }
   }
@@ -98,30 +105,41 @@ Rules for parsing:
    * Generates a friendly daily summary message using Groq AI
    */
   public static async generateDailySummary(
-    expensesList: Array<{ amount: string; category: string; description: string | null }>,
-    currency: string
+    expensesList: Array<{
+      amount: string;
+      category: string;
+      description: string | null;
+    }>,
+    currency: string,
   ): Promise<string> {
     if (!apiKey) {
-      logger.error('Cannot generate daily summary with Groq: API key is not configured.');
-      return '⚠️ AI Summary Configuration Error: Groq API key is not set on the server.';
+      logger.error(
+        "Cannot generate daily summary with Groq: API key is not configured.",
+      );
+      return "⚠️ AI Summary Configuration Error: Groq API key is not set on the server.";
     }
 
     try {
-      logger.info(`Sending ${expensesList.length} expenses to Groq for daily summary generation`);
+      logger.info(
+        `Sending ${expensesList.length} expenses to Groq for daily summary generation`,
+      );
 
-      const totalAmount = expensesList.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+      const totalAmount = expensesList.reduce(
+        (sum, item) => sum + parseFloat(item.amount),
+        0,
+      );
 
       const expensesFormatted = expensesList
         .map(
           (item) =>
-            `- ${currency.split(' ')[0]} ${parseFloat(item.amount).toFixed(2)} on "${
-              item.description || 'Unspecified'
-            }" [Category: ${item.category}]`
+            `- ${currency.split(" ")[0]} ${parseFloat(item.amount).toFixed(2)} on "${
+              item.description || "Unspecified"
+            }" [Category: ${item.category}]`,
         )
-        .join('\n');
+        .join("\n");
 
-      const promptContent = `Here is the list of expenses recorded today (total: ${currency.split(' ')[0]} ${totalAmount.toFixed(2)}):
-${expensesFormatted || 'No expenses recorded today.'}
+      const promptContent = `Here is the list of expenses recorded today (total: ${currency.split(" ")[0]} ${totalAmount.toFixed(2)}):
+${expensesFormatted || "No expenses recorded today."}
 
 Please draft a friendly, professional, and visually clear daily summary broadcast for the user.
 Use bullet points and bold headers to summarize spending by category. Keep the tone encouraging and brief.
@@ -130,7 +148,7 @@ Format the currency using ${currency}. Do not output JSON, output a clean markdo
       const completion = await groq.chat.completions.create({
         messages: [
           {
-            role: 'system',
+            role: "system",
             content: `You are Fino, a personal WhatsApp automation assistant. Your job is to draft a daily spending summary message for the user based on their tracked expenses.
 Your response should be formatted using WhatsApp markdown (*bold*, _italic_, ~strikethrough~, monospace \`\`\`, bullet points).
 Be concise, clear, and encouraging. Focus on showing:
@@ -139,23 +157,26 @@ Be concise, clear, and encouraging. Focus on showing:
 3. A friendly closing remark.`,
           },
           {
-            role: 'user',
+            role: "user",
             content: promptContent,
           },
         ],
-        model: 'llama-3.3-70b-versatile',
+        model: "llama-3.3-70b-versatile",
         temperature: 0.7,
       });
 
       const responseText = completion.choices[0]?.message?.content;
       if (!responseText) {
-        throw new Error('Groq returned an empty response for daily summary.');
+        throw new Error("Groq returned an empty response for daily summary.");
       }
 
       return responseText.trim();
     } catch (error) {
-      logger.error(error, 'Error generating daily summary with Groq AI');
-      const totalAmount = expensesList.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+      logger.error(error, "Error generating daily summary with Groq AI");
+      const totalAmount = expensesList.reduce(
+        (sum, item) => sum + parseFloat(item.amount),
+        0,
+      );
       return `📊 *Daily Expense Summary*\n\nTotal Spent: ${currency} ${totalAmount.toFixed(2)}\n\n(Fallback summary triggered due to AI error. Please check server logs.)`;
     }
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Search, ArrowLeft, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
@@ -21,6 +21,7 @@ export default function ExpensesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const fetchExpenses = async () => {
     setLoading(true);
@@ -53,21 +54,8 @@ export default function ExpensesPage() {
     return () => clearTimeout(timer);
   }, [searchQuery, selectedCategory]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
-    setIsDeleting(id);
-    try {
-      const res = await fetch(`/api/expenses?id=${id}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        setExpenses(expenses.filter((exp) => exp.id !== id));
-      }
-    } catch (err) {
-      console.error('Failed to delete expense:', err);
-    } finally {
-      setIsDeleting(null);
-    }
+  const handleDeleteClick = (id: string) => {
+    setDeleteConfirmId(id);
   };
 
   const getCurrencySymbol = (currencyStr: string) => {
@@ -176,7 +164,7 @@ export default function ExpensesPage() {
                       </td>
                       <td className="py-3.5 px-4 text-center">
                         <Button
-                          onClick={() => handleDelete(expense.id)}
+                          onClick={() => handleDeleteClick(expense.id)}
                           disabled={isDeleting === expense.id}
                           variant="ghost"
                           size="icon"
@@ -202,6 +190,76 @@ export default function ExpensesPage() {
           )}
         </CardContent>
       </Card>
+
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="w-full max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-in zoom-in-95 duration-200">
+            <CardHeader>
+              <CardTitle className="text-zinc-900 dark:text-zinc-50">Delete Transaction</CardTitle>
+              <CardDescription className="text-zinc-500 dark:text-zinc-400">
+                Are you sure you want to delete this expense? This action cannot be undone.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pb-6">
+              {(() => {
+                const exp = expenses.find((e) => e.id === deleteConfirmId);
+                if (!exp) return null;
+                return (
+                  <div className="p-3.5 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-150 dark:border-zinc-800 space-y-2">
+                    <div className="flex justify-between items-center text-sm font-semibold">
+                      <span className="text-zinc-900 dark:text-zinc-100">{exp.description || 'Unspecified'}</span>
+                      <span className="text-rose-600 dark:text-rose-450 font-bold">{currencySymbol}{parseFloat(exp.amount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-zinc-500">
+                      <span>Category: {exp.category}</span>
+                      <span>{formatSpentAt(exp.spentAt)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+            <CardFooter className="flex justify-end gap-3 border-t border-zinc-100 dark:border-zinc-800 p-4">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteConfirmId(null)}
+                disabled={isDeleting !== null}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  if (!deleteConfirmId) return;
+                  setIsDeleting(deleteConfirmId);
+                  try {
+                    const res = await fetch(`/api/expenses?id=${deleteConfirmId}`, {
+                      method: 'DELETE',
+                    });
+                    if (res.ok) {
+                      setExpenses(expenses.filter((exp) => exp.id !== deleteConfirmId));
+                      setDeleteConfirmId(null);
+                    }
+                  } catch (err) {
+                    console.error('Failed to delete expense:', err);
+                  } finally {
+                    setIsDeleting(null);
+                  }
+                }}
+                disabled={isDeleting !== null}
+                className="gap-2 bg-rose-600 hover:bg-rose-700 text-white font-medium"
+              >
+                {isDeleting !== null ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Deleting...
+                  </>
+                ) : (
+                  'Delete Transaction'
+                )}
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

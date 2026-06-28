@@ -6,15 +6,18 @@ import { GroqService } from '@/services/groq';
 import { whatsappService } from '@/services/whatsapp';
 import { logger } from '@/utils/logger';
 
+declare global {
+  var schedulerCronJob: ScheduledTask | undefined;
+}
+
 export class SchedulerService {
   private static isRunning = false;
-  private static cronJob: ScheduledTask | null = null;
 
   /**
    * Starts the background scheduler that wakes up every minute to check if a summary is due.
    */
   public static start() {
-    if (this.cronJob) {
+    if (globalThis.schedulerCronJob) {
       logger.info('Scheduler already running.');
       return;
     }
@@ -22,7 +25,7 @@ export class SchedulerService {
     logger.info('Starting daily spending summary scheduler...');
     
     // Run every minute
-    this.cronJob = cron.schedule('* * * * *', async () => {
+    globalThis.schedulerCronJob = cron.schedule('* * * * *', async () => {
       if (this.isRunning) return;
       this.isRunning = true;
 
@@ -63,19 +66,44 @@ export class SchedulerService {
 
     const timeStr = timeFormatter.format(now); // e.g. "23:00"
     
-    // Check if time matches
-    if (timeStr !== summaryTime) {
-      return;
-    }
-
     const dateParts = dateFormatter.formatToParts(now);
     const year = dateParts.find(p => p.type === 'year')?.value;
     const month = dateParts.find(p => p.type === 'month')?.value;
     const day = dateParts.find(p => p.type === 'day')?.value;
     const dateStr = `${year}-${month}-${day}`;
 
-    // Check if daily summary already exists for this date
     const dailySummaryRepo = new DailySummaryRepository();
+
+    // Send any unsent daily summaries if WhatsApp is connected
+    const targetJid = whatsappService.getConnectedJid();
+    if (targetJid) {
+      try {
+        const allSummaries = await dailySummaryRepo.findAll(10);
+        for (const summary of allSummaries) {
+          if (!summary.sentAt) {
+            logger.info(`Found unsent daily summary for date ${summary.date}. Attempting to send...`);
+            try {
+              await whatsappService.sendMessage(targetJid, summary.summary);
+              await dailySummaryRepo.markAsSent(summary.id);
+              logger.info(`Unsent daily summary for date ${summary.date} successfully sent.`);
+            } catch (sendErr) {
+              logger.error(sendErr, `Failed to send unsent daily summary for date ${summary.date}`);
+              // Stop processing remaining summaries on connection failure
+              break;
+            }
+          }
+        }
+      } catch (err) {
+        logger.error(err, 'Error processing unsent daily summaries');
+      }
+    }
+
+    // Check if scheduled time matches for creating a new daily summary
+    if (timeStr !== summaryTime) {
+      return;
+    }
+
+    // Check if daily summary already exists for this date
     const existingSummary = await dailySummaryRepo.findByDate(dateStr);
 
     if (existingSummary) {
@@ -127,18 +155,18 @@ export class SchedulerService {
     });
 
     // Send summary via WhatsApp to connected user
-    const targetJid = whatsappService.getConnectedJid();
-    if (!targetJid) {
+    const summaryJid = whatsappService.getConnectedJid();
+    if (!summaryJid) {
       logger.warn('Could not broadcast daily summary: WhatsApp client not connected or user JID not available.');
       return;
     }
 
     try {
-      await whatsappService.sendMessage(targetJid, summaryText);
+      await whatsappService.sendMessage(summaryJid, summaryText);
       await dailySummaryRepo.markAsSent(newSummary.id);
-      logger.info(`Daily summary successfully sent to ${targetJid} and saved in DB.`);
+      logger.info(`Daily summary successfully sent to ${summaryJid} and saved in DB.`);
     } catch (sendErr) {
-      logger.error(sendErr, `Failed to send daily summary to WhatsApp JID: ${targetJid}`);
+      logger.error(sendErr, `Failed to send daily summary to WhatsApp JID: ${summaryJid}`);
     }
   }
 
@@ -146,9 +174,9 @@ export class SchedulerService {
    * Stops the active cron job.
    */
   public static stop() {
-    if (this.cronJob) {
-      this.cronJob.stop();
-      this.cronJob = null;
+    if (globalThis.schedulerCronJob) {
+      globalThis.schedulerCronJob.stop();
+      globalThis.schedulerCronJob = undefined;
       logger.info('Scheduler stopped.');
     }
   }
