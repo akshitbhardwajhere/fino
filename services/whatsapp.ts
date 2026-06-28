@@ -233,7 +233,8 @@ export class WhatsAppService {
 
           try {
             // Call Groq parser service to analyze message intent and content
-            const parsed = await GroqService.parseMessage(text);
+            const currencySymbol = userSettings.currency?.match(/\((.+)\)/)?.[1] || '₹';
+            const parsed = await GroqService.parseMessage(text, currencySymbol);
 
             if (parsed.intent === 'track_expense' && parsed.expense) {
               // Create the expense record

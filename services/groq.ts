@@ -31,7 +31,7 @@ export class GroqService {
   /**
    * Parses the incoming text message to detect intent and extract structured data
    */
-  public static async parseMessage(text: string): Promise<ParsedMessage> {
+  public static async parseMessage(text: string, currencySymbol: string = '₹'): Promise<ParsedMessage> {
     if (!apiKey) {
       logger.error(
         "Cannot parse message with Groq: API key is not configured.",
@@ -63,12 +63,33 @@ You must respond ONLY with a JSON object. The JSON object must match this schema
     "category": "Food" | "Transport" | "Utilities" | "Travel" | "Entertainment" | "Other",
     "description": "Short description of what the expense was for"
   } | null,
-  "reply": "A friendly, short confirmation message. For expenses, summarize what was tracked (e.g., '₹10 for chips tracked under Food!'). For non-expenses, gently guide the user on how to track expenses."
+  "reply": "Sleek WhatsApp markdown message. If intent is 'track_expense', it MUST follow this structure: '💸 *Expense Tracked!*\\n-------------------------\\n💰 *Amount:* ${currencySymbol}<amount_formatted_to_two_decimals>\\n🏷️ *Category:* <category_name> <category_emoji>\\n📝 *Description:* _<description>_\\n-------------------------\\n💡 _View your updated spending on your dashboard!_'. If intent is 'other', it MUST follow this structure: '👋 *Hi, I\\'m Fino!*\\nYour personal finance assistant on WhatsApp.\\n\\nTo track an expense, just text me like this:\\n👉 \`150 for lunch\`\\n👉 \`300 petrol\`\\n👉 \`2500 flight ticket\`\\n\\n📊 _Check your dashboard anytime to view your analytics!_'"
 }
+
+Rules for formatting the "reply" string:
+1. If intent is "track_expense", format the reply strictly using this layout (using appropriate emojis for the category):
+💸 *Expense Tracked!*
+-------------------------
+💰 *Amount:* ${currencySymbol}<amount_formatted_to_two_decimals>
+🏷️ *Category:* <category_name> <matching_category_emoji>
+📝 *Description:* _<description>_
+-------------------------
+💡 _View your updated spending on your dashboard!_
+
+2. If intent is "other", reply with a friendly welcome message showing how to use Fino:
+👋 *Hi, I'm Fino!*
+Your personal finance assistant on WhatsApp.
+
+To track an expense, just text me like this:
+👉 \`150 for lunch\`
+👉 \`300 petrol\`
+👉 \`2500 flight ticket\`
+
+📊 _Check your dashboard anytime to view your analytics!_
 
 Rules for parsing:
 - If the user specifies an expense (e.g., "10 for chips", "2500 for gurez trip", "300 petrol"), set intent to "track_expense", extract the numerical amount, assign a matching category, extract the description, and write a confirmation reply.
-- If the user sends a greeting or general text not related to an expense, set intent to "other", set expense to null, and write a friendly reply explaining how they can use you to track expenses.
+- If the user sends a greeting or general text not related to an expense, set intent to "other", set expense to null, and write the greeting reply.
 - Do not add any text before or after the JSON output.`,
           },
           {
@@ -141,20 +162,26 @@ Rules for parsing:
       const promptContent = `Here is the list of expenses recorded today (total: ${currency.split(" ")[0]} ${totalAmount.toFixed(2)}):
 ${expensesFormatted || "No expenses recorded today."}
 
-Please draft a friendly, professional, and visually clear daily summary broadcast for the user.
-Use bullet points and bold headers to summarize spending by category. Keep the tone encouraging and brief.
-Format the currency using ${currency}. Do not output JSON, output a clean markdown message ready for WhatsApp.`;
+Please draft a sleek, beautifully formatted summary broadcast using the formatting rules. Format the currency using ${currency.split(" ")[0]}. Do not wrap the response in markdown code blocks, output only the raw message ready for copy-pasting.`;
 
       const completion = await groq.chat.completions.create({
         messages: [
           {
             role: "system",
-            content: `You are Fino, a personal WhatsApp automation assistant. Your job is to draft a daily spending summary message for the user based on their tracked expenses.
-Your response should be formatted using WhatsApp markdown (*bold*, _italic_, ~strikethrough~, monospace \`\`\`, bullet points).
-Be concise, clear, and encouraging. Focus on showing:
-1. Total spent today.
-2. Breakdown by category.
-3. A friendly closing remark.`,
+            content: `You are Fino, a personal finance WhatsApp bot. Your job is to draft a sleek, beautiful, and encouraging daily spending summary message for the user based on their tracked expenses.
+Your response MUST use WhatsApp markdown formatting:
+- Use *bold* for emphasis, keys, amounts, and headers.
+- Use _italic_ for descriptions, dates, or notes.
+- Use emojis generously to make the message visually engaging (e.g. 📊, 💰, 💸, 📅, 🍔, 🚗, 💡, 🌟).
+- Put short horizontal divider lines (e.g. -------------------------) to separate sections.
+- Keep it highly structured, airy, and easy to read at a single glance.
+
+Structuring guidelines:
+1. Title block: "📊 *FINO DAILY SUMMARY*" with today's date.
+2. Total amount spent highlighted in bold.
+3. Breakdown of expenses grouped by Category with appropriate category emojis.
+4. Provide a quick encouraging feedback or personal insight.
+5. End with a friendly, brief closing remark.`,
           },
           {
             role: "user",
@@ -177,7 +204,12 @@ Be concise, clear, and encouraging. Focus on showing:
         (sum, item) => sum + parseFloat(item.amount),
         0,
       );
-      return `📊 *Daily Expense Summary*\n\nTotal Spent: ${currency} ${totalAmount.toFixed(2)}\n\n(Fallback summary triggered due to AI error. Please check server logs.)`;
+      const todayStr = new Date().toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+      return `📊 *FINO DAILY SUMMARY*\n📅 _Date: ${todayStr}_\n\n-------------------------\n\n💰 *Total Spent Today:* *${currency.split(" ")[0]} ${totalAmount.toFixed(2)}*\n\n(Fallback summary triggered due to AI error. Please check server logs.)`;
     }
   }
 }
