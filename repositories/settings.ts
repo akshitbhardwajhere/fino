@@ -22,7 +22,7 @@ export class SettingsRepository {
     // Initialize defaults if table is empty for this user
     const defaultSettings: NewSettings = {
       id: userId,
-      aiProvider: 'gemini',
+      aiProvider: 'groq',
       timezone: 'Asia/Kolkata',
       currency: 'INR (₹)',
       summaryTime: '23:00',
@@ -50,7 +50,7 @@ export class SettingsRepository {
     if (!existing) {
       const defaultSettings: NewSettings = {
         id: userId,
-        aiProvider: data.aiProvider || 'gemini',
+        aiProvider: data.aiProvider || 'groq',
         timezone: data.timezone || 'Asia/Kolkata',
         currency: data.currency || 'INR (₹)',
         summaryTime: data.summaryTime || '23:00',

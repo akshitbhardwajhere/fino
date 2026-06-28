@@ -31,6 +31,30 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { aiProvider, timezone, currency, summaryTime, phoneNumber } = body;
 
+    // Validate aiProvider
+    if (aiProvider && aiProvider !== 'groq') {
+      return NextResponse.json({ error: 'Invalid AI Provider' }, { status: 400 });
+    }
+
+    // Validate timezone using Intl API
+    if (timezone) {
+      try {
+        Intl.DateTimeFormat(undefined, { timeZone: timezone });
+      } catch {
+        return NextResponse.json({ error: 'Invalid Timezone' }, { status: 400 });
+      }
+    }
+
+    // Validate currency
+    if (currency && !['INR (₹)', 'USD ($)', 'EUR (€)', 'GBP (£)'].includes(currency)) {
+      return NextResponse.json({ error: 'Invalid Currency' }, { status: 400 });
+    }
+
+    // Validate summaryTime (HH:MM format)
+    if (summaryTime && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(summaryTime)) {
+      return NextResponse.json({ error: 'Invalid Summary Time format (expected HH:MM)' }, { status: 400 });
+    }
+
     const whatsappJid = phoneNumber ? phoneNumber.replace(/\D/g, '') + '@s.whatsapp.net' : null;
 
     const settingsRepo = new SettingsRepository();

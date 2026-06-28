@@ -7,7 +7,7 @@ import { ArrowLeft, Save, QrCode, RefreshCw, Globe, DollarSign, Clock, CheckCirc
 import Link from 'next/link';
 
 export default function SettingsPage() {
-  const [aiProvider, setAiProvider] = useState<'gemini' | 'openai'>('gemini');
+  const [aiProvider, setAiProvider] = useState<'groq'>('groq');
   const [timezone, setTimezone] = useState('Asia/Kolkata');
   const [currency, setCurrency] = useState('INR (₹)');
   const [summaryTime, setSummaryTime] = useState('23:00');

@@ -22,6 +22,20 @@
       "when": 1782640331092,
       "tag": "0002_yellow_reptil",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782644101622,
+      "tag": "0003_outgoing_proudstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782644215481,
+      "tag": "0004_white_malice",
+      "breakpoints": true
     }
   ]
 }

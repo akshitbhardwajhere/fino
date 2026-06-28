@@ -115,7 +115,7 @@ export default async function Home() {
               </div>
               <h3 className="text-base font-bold text-zinc-200 mb-2">Instant Parsing</h3>
               <p className="text-zinc-400 text-xs leading-relaxed">
-                Send natural sentences like &quot;50 for lunch with mom&quot;. Our Gemini AI extracts the amount, matches the description, and categorizes it in milliseconds.
+                Send natural sentences like &quot;50 for lunch with mom&quot;. Our Groq AI extracts the amount, matches the description, and categorizes it in milliseconds.
               </p>
             </div>
 

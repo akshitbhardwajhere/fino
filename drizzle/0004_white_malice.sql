@@ -1,0 +1,1 @@
+ALTER TABLE "settings" ALTER COLUMN "ai_provider" SET DEFAULT 'groq';
