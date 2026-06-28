@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./public/fino_banner.png" alt="Fino - Open-Source AI Expense Tracker via WhatsApp" width="100%" />
+</p>
+
 # Fino — Open-Source AI Expense Tracker via WhatsApp
 
 Fino is a premium, open-source personal finance assistant that tracks your expenses automatically through WhatsApp. Just message Fino (e.g. `200 KFC` or `50 for petrol`), and the AI will parse, categorize, and log the transaction in your database, updating your dashboard in real-time.
@@ -10,20 +14,6 @@ Fino is a premium, open-source personal finance assistant that tracks your expen
 *   **Interactive Analytics Dashboard**: Beautiful UI built with Next.js, featuring spending breakdowns, charts, and transaction histories.
 *   **Daily Spending Broadcasts**: Receive timezone-adjusted automated daily summaries directly on WhatsApp.
 *   **Multi-User & Security**: Secured with Clerk authentication so each user manages their own settings and expenses privately.
-
----
-
-## Architecture Diagram
-
-```mermaid
-graph TD
-    Client[WhatsApp Mobile App] -->|Sends message| Bot[Baileys Bot Process :3005]
-    Bot -->|Invokes parsing| Groq[Groq AI API]
-    Bot -->|Saves Expense| DB[(Supabase PostgreSQL)]
-    Web[Next.js Dashboard :3000] -->|Fetches Stats| Bot
-    Web -->|Queries Data| DB
-    Web -->|User Auth| Clerk[Clerk Auth]
-```
 
 ---
 
@@ -70,17 +60,5 @@ Open [http://localhost:3000](http://localhost:3000) to view your dashboard. Link
 
 ---
 
-## Production Deployment Guide
-
-> [!IMPORTANT]
-> **Deployment Server Requirements:**
-> Fino runs a background node process (`bin/whatsapp-bot.ts`) to maintain a persistent connection to WhatsApp sockets and listen to incoming messages.
->
-> *   **Do NOT deploy on Serverless platforms (like Vercel, Netlify, or AWS Lambda).** Serverless functions are ephemeral, terminate quickly, and cannot run background loops or persistent socket listeners.
-> *   **Do deploy on Container or VPS hosts (like Railway, Render, Fly.io, Heroku, or a VPS/digitalocean droplet).** Ensure the platform supports persistent processes and stateful directory caching if you store authentication locally (or link a persistent storage volume to `./.wwebjs_auth` to keep your WhatsApp login active across restarts).
-
-### Deployment Checklist
-1. Set `NODE_ENV=production`.
-2. Configure all environment keys from `.env.example`.
-3. Build the Next.js bundle: `npm run build`.
-4. Start the server: `npm run start`.
+## License
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
