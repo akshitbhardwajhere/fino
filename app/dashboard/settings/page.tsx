@@ -11,6 +11,7 @@ export default function SettingsPage() {
   const [timezone, setTimezone] = useState('Asia/Kolkata');
   const [currency, setCurrency] = useState('INR (₹)');
   const [summaryTime, setSummaryTime] = useState('23:00');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -29,6 +30,7 @@ export default function SettingsPage() {
           setTimezone(data.timezone);
           setCurrency(data.currency);
           setSummaryTime(data.summaryTime);
+          setPhoneNumber(data.whatsappJid ? data.whatsappJid.split('@')[0] : '');
         }
       } catch (err) {
         console.error('Failed to load settings:', err);
@@ -72,7 +74,7 @@ export default function SettingsPage() {
       const res = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ aiProvider, timezone, currency, summaryTime }),
+        body: JSON.stringify({ aiProvider, timezone, currency, summaryTime, phoneNumber }),
       });
       if (res.ok) {
         setIsSaved(true);
@@ -113,7 +115,8 @@ export default function SettingsPage() {
         <Button onClick={handleSave} disabled={isSaving} className="gap-2">
           <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : isSaved ? 'Saved!' : 'Save Changes'}
         </Button>
-      </div>      <div className="grid gap-6 md:grid-cols-3">
+      </div>
+      <div className="grid gap-6 md:grid-cols-3">
         {/* Left Column - Core Configurations */}
         <div className="md:col-span-2 space-y-6 order-2 md:order-1">
           {/* Card 2: Regional Preferences */}
@@ -173,6 +176,22 @@ export default function SettingsPage() {
                   />
                   <span className="text-xs text-zinc-500">
                     A summary of the day&apos;s total expenses will automatically be sent to your WhatsApp at this time.
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">WhatsApp Phone Number</label>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <input
+                    type="tel"
+                    placeholder="e.g. 919598547460"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                    className="w-full sm:max-w-xs rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-zinc-800 dark:bg-zinc-900"
+                  />
+                  <span className="text-xs text-zinc-500">
+                    Include country code, no + or spaces (e.g. 919598547460). Incoming messages from this number will be tracked to your account.
                   </span>
                 </div>
               </div>
@@ -246,10 +265,10 @@ export default function SettingsPage() {
                 size="sm" 
                 className="w-full gap-2"
                 onClick={handleRefreshQr}
-                disabled={waStatus === 'connected' || isLoadingStatus || isRefreshing}
+                disabled={isLoadingStatus || isRefreshing}
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                {isRefreshing ? 'Resetting...' : 'Refresh QR Code'}
+                {isRefreshing ? 'Resetting...' : waStatus === 'connected' ? 'Disconnect / Reset Session' : 'Refresh QR Code'}
               </Button>
             </CardFooter>
           </Card>

@@ -2,6 +2,7 @@ import { pgTable, uuid, text, numeric, timestamp, jsonb, varchar, date } from 'd
 
 export const expenses = pgTable('expenses', {
   id: uuid('id').defaultRandom().primaryKey(),
+  userId: varchar('user_id', { length: 256 }),
   amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
   category: varchar('category', { length: 100 }).notNull(),
   description: text('description'),
@@ -12,6 +13,7 @@ export const expenses = pgTable('expenses', {
 
 export const messageLogs = pgTable('message_logs', {
   id: uuid('id').defaultRandom().primaryKey(),
+  userId: varchar('user_id', { length: 256 }),
   incomingMessage: text('incoming_message').notNull(),
   parsedJson: jsonb('parsed_json'),
   intent: varchar('intent', { length: 50 }),
@@ -22,6 +24,7 @@ export const messageLogs = pgTable('message_logs', {
 
 export const dailySummaries = pgTable('daily_summaries', {
   id: uuid('id').defaultRandom().primaryKey(),
+  userId: varchar('user_id', { length: 256 }),
   date: date('date').notNull(),
   total: numeric('total', { precision: 10, scale: 2 }).notNull(),
   summary: text('summary').notNull(),
@@ -29,10 +32,11 @@ export const dailySummaries = pgTable('daily_summaries', {
 });
 
 export const settings = pgTable('settings', {
-  id: varchar('id', { length: 50 }).primaryKey().default('global'),
+  id: varchar('id', { length: 256 }).primaryKey(),
   aiProvider: varchar('ai_provider', { length: 50 }).default('gemini').notNull(),
   timezone: varchar('timezone', { length: 100 }).default('Asia/Kolkata').notNull(),
   currency: varchar('currency', { length: 50 }).default('INR (₹)').notNull(),
   summaryTime: varchar('summary_time', { length: 5 }).default('23:00').notNull(),
+  whatsappJid: varchar('whatsapp_jid', { length: 256 }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

@@ -3,17 +3,23 @@ import { SettingsRepository } from '@/repositories/settings';
 import { ExpenseRepository } from '@/repositories/expense';
 import { db } from '@/lib/db/client';
 import { messageLogs } from '@/lib/db/schema';
-import { sql, eq } from 'drizzle-orm';
+import { sql, eq, and } from 'drizzle-orm';
 import { whatsappService } from '@/services/whatsapp';
+import { auth } from '@clerk/nextjs/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const settingsRepo = new SettingsRepository();
     const expenseRepo = new ExpenseRepository();
 
-    const settings = await settingsRepo.getSettings();
+    const settings = await settingsRepo.getSettings(userId);
     const { timezone, currency, summaryTime } = settings;
 
     // Get dates in configured timezone
@@ -49,25 +55,33 @@ export async function GET() {
     const endOfMonth = getAbsoluteDate(`${year}-${month}-${String(lastDay).padStart(2, '0')}T23:59:59.999`, timezone);
 
     // 1. Today's spending
-    const todayExpenses = await expenseRepo.findAll({ startDate: startOfToday, endDate: endOfToday });
+    const todayExpenses = await expenseRepo.findAll({ userId, startDate: startOfToday, endDate: endOfToday });
     const todayTotal = todayExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
 
     // 2. This Month's spending
-    const monthlySpending = await expenseRepo.getTotalSpending(startOfMonth, endOfMonth);
+    const monthlySpending = await expenseRepo.getTotalSpending(userId, startOfMonth, endOfMonth);
     const monthlyTotal = parseFloat(monthlySpending);
 
     // 3. Message log stats
-    const [allLogsCountRes] = await db.select({ count: sql<number>`count(*)` }).from(messageLogs);
+    const [allLogsCountRes] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messageLogs)
+      .where(eq(messageLogs.userId, userId));
     const totalMessages = Number(allLogsCountRes?.count || 0);
 
     const [matchedLogsCountRes] = await db
       .select({ count: sql<number>`count(*)` })
       .from(messageLogs)
-      .where(eq(messageLogs.intent, 'track_expense'));
+      .where(
+        and(
+          eq(messageLogs.userId, userId),
+          eq(messageLogs.intent, 'track_expense')
+        )
+      );
     const matchedMessages = Number(matchedLogsCountRes?.count || 0);
 
     // 4. Recent expenses (limit 5)
-    const recentExpenses = await expenseRepo.findAll();
+    const recentExpenses = await expenseRepo.findAll({ userId });
     const topRecent = recentExpenses.slice(0, 5).map(exp => ({
       id: exp.id,
       amount: exp.amount,
@@ -77,7 +91,7 @@ export async function GET() {
     }));
 
     // 5. Category breakdown for this month
-    const categoryTotals = await expenseRepo.getTotalsGroupedByCategory(startOfMonth, endOfMonth);
+    const categoryTotals = await expenseRepo.getTotalsGroupedByCategory(userId, startOfMonth, endOfMonth);
     const totalCategorySum = categoryTotals.reduce((sum, item) => sum + parseFloat(item.total || '0'), 0);
 
     const colors = ['bg-indigo-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500', 'bg-sky-500', 'bg-violet-500'];

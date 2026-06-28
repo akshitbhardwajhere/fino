@@ -13,23 +13,32 @@ export class ExpenseRepository {
   }
 
   /**
-   * Retrieve an expense by its unique UUID
+   * Retrieve an expense by its unique UUID and user ID
    */
-  async findById(id: string): Promise<Expense | undefined> {
-    const [expense] = await db.select().from(expenses).where(eq(expenses.id, id)).limit(1);
+  async findById(id: string, userId: string): Promise<Expense | undefined> {
+    const [expense] = await db
+      .select()
+      .from(expenses)
+      .where(and(eq(expenses.id, id), eq(expenses.userId, userId)))
+      .limit(1);
     return expense;
   }
 
   /**
-   * Find all expenses with optional filtering (category, date range, description search)
+   * Find all expenses with optional filtering (category, date range, description search) scoped to user
    */
   async findAll(filters?: {
+    userId?: string;
     category?: string;
     startDate?: Date;
     endDate?: Date;
     search?: string;
   }): Promise<Expense[]> {
     const conditions = [];
+
+    if (filters?.userId) {
+      conditions.push(eq(expenses.userId, filters.userId));
+    }
 
     if (filters?.category) {
       conditions.push(eq(expenses.category, filters.category));
@@ -59,31 +68,35 @@ export class ExpenseRepository {
   /**
    * Update an existing expense record
    */
-  async update(id: string, data: Partial<NewExpense>): Promise<Expense | undefined> {
+  async update(id: string, userId: string, data: Partial<NewExpense>): Promise<Expense | undefined> {
     const [updated] = await db
       .update(expenses)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(expenses.id, id))
+      .where(and(eq(expenses.id, id), eq(expenses.userId, userId)))
       .returning();
     return updated;
   }
 
   /**
-   * Delete an expense by UUID
+   * Delete an expense by UUID and user ID
    */
-  async delete(id: string): Promise<boolean> {
-    const result = await db.delete(expenses).where(eq(expenses.id, id)).returning();
+  async delete(id: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(expenses)
+      .where(and(eq(expenses.id, id), eq(expenses.userId, userId)))
+      .returning();
     return result.length > 0;
   }
 
   /**
-   * Get total spending grouped by categories in a specific date range
+   * Get total spending grouped by categories in a specific date range for a user
    */
   async getTotalsGroupedByCategory(
+    userId: string,
     startDate?: Date,
     endDate?: Date
   ): Promise<{ category: string; total: string }[]> {
-    const conditions = [];
+    const conditions = [eq(expenses.userId, userId)];
 
     if (startDate) {
       conditions.push(gte(expenses.spentAt, startDate));
@@ -92,8 +105,6 @@ export class ExpenseRepository {
     if (endDate) {
       conditions.push(lte(expenses.spentAt, endDate));
     }
-
-    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const query = db
       .select({
@@ -103,18 +114,14 @@ export class ExpenseRepository {
       .from(expenses)
       .groupBy(expenses.category);
 
-    if (whereClause) {
-      return query.where(whereClause);
-    }
-
-    return query;
+    return query.where(and(...conditions));
   }
 
   /**
-   * Get total spending sum in a specific date range
+   * Get total spending sum in a specific date range for a user
    */
-  async getTotalSpending(startDate?: Date, endDate?: Date): Promise<string> {
-    const conditions = [];
+  async getTotalSpending(userId: string, startDate?: Date, endDate?: Date): Promise<string> {
+    const conditions = [eq(expenses.userId, userId)];
 
     if (startDate) {
       conditions.push(gte(expenses.spentAt, startDate));
@@ -124,15 +131,13 @@ export class ExpenseRepository {
       conditions.push(lte(expenses.spentAt, endDate));
     }
 
-    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
     const query = db
       .select({
         total: sql<string>`coalesce(sum(${expenses.amount}), 0)`,
       })
       .from(expenses);
 
-    const [result] = whereClause ? await query.where(whereClause) : await query;
+    const [result] = await query.where(and(...conditions));
     return result?.total || '0.00';
   }
 }

@@ -1,7 +1,7 @@
 import { db } from '@/lib/db/client';
 import { dailySummaries } from '@/lib/db/schema';
 import { type DailySummary, type NewDailySummary } from '@/types/db';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, isNull } from 'drizzle-orm';
 
 export class DailySummaryRepository {
   /**
@@ -13,25 +13,37 @@ export class DailySummaryRepository {
   }
 
   /**
-   * Find a summary by its specific date string (format: YYYY-MM-DD)
+   * Find a summary by its specific date string and user ID
    */
-  async findByDate(dateStr: string): Promise<DailySummary | undefined> {
+  async findByDateAndUser(dateStr: string, userId: string): Promise<DailySummary | undefined> {
     const [summary] = await db
       .select()
       .from(dailySummaries)
-      .where(eq(dailySummaries.date, dateStr))
+      .where(and(eq(dailySummaries.date, dateStr), eq(dailySummaries.userId, userId)))
       .limit(1);
     return summary;
   }
 
   /**
-   * Fetch all daily summaries, ordered newest first
+   * Fetch all daily summaries for a user, ordered newest first
    */
-  async findAll(limitVal = 100): Promise<DailySummary[]> {
+  async findAll(userId: string, limitVal = 100): Promise<DailySummary[]> {
     return db
       .select()
       .from(dailySummaries)
+      .where(eq(dailySummaries.userId, userId))
       .orderBy(desc(dailySummaries.date))
+      .limit(limitVal);
+  }
+
+  /**
+   * Fetch all unsent summaries in the system (for connection-loss retry logic)
+   */
+  async findAllUnsent(limitVal = 100): Promise<DailySummary[]> {
+    return db
+      .select()
+      .from(dailySummaries)
+      .where(isNull(dailySummaries.sentAt))
       .limit(limitVal);
   }
 

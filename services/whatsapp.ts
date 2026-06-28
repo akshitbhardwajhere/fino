@@ -9,6 +9,7 @@ import pino from 'pino';
 import { logger } from '@/utils/logger';
 import { MessageLogRepository } from '@/repositories/messageLog';
 import { ExpenseRepository } from '@/repositories/expense';
+import { SettingsRepository } from '@/repositories/settings';
 import { GroqService } from '@/services/groq';
 
 declare global {
@@ -101,6 +102,10 @@ export class WhatsAppService {
 
       // Monitor connection state
       sock.ev.on('connection.update', (update) => {
+        // If this event is from an old/replaced socket, ignore it
+        if (this.sock !== sock) {
+          return;
+        }
         const { connection, lastDisconnect, qr } = update;
 
         if (qr) {
@@ -159,10 +164,39 @@ export class WhatsAppService {
 
           logger.info(`WhatsApp message received from ${remoteJid}: "${text}"`);
 
+          // Look up user settings by whatsappJid
+          const settingsRepo = new SettingsRepository();
+          const userSettings = await settingsRepo.getSettingsByWhatsappJid(remoteJid);
+
+          if (!userSettings) {
+            logger.warn(`WhatsApp number ${remoteJid} is not linked to any user settings.`);
+            
+            // Create a general un-associated log
+            try {
+              await messageLogRepo.create({
+                incomingMessage: text,
+                status: 'processed',
+                intent: 'other',
+                response: 'Fino: Your WhatsApp number is not linked to any account.',
+              });
+            } catch (dbErr) {
+              logger.error(dbErr, 'Failed to create message log entry');
+            }
+
+            await this.sendMessage(
+              remoteJid,
+              "Fino: Your WhatsApp number is not linked to any account. Please log in to the Fino dashboard, go to Settings, and enter your WhatsApp phone number to link it."
+            );
+            continue;
+          }
+
+          const userId = userSettings.id;
+
           // Create message log in the database
           let logRecord;
           try {
             logRecord = await messageLogRepo.create({
+              userId,
               incomingMessage: text,
               status: 'pending',
             });
@@ -177,6 +211,7 @@ export class WhatsAppService {
             if (parsed.intent === 'track_expense' && parsed.expense) {
               // Create the expense record
               await expenseRepo.create({
+                userId,
                 amount: parsed.expense.amount.toString(),
                 category: parsed.expense.category,
                 description: parsed.expense.description,

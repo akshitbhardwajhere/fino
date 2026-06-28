@@ -15,6 +15,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { UserButton } from '@clerk/nextjs';
 
 interface SidebarItem {
   name: string;
@@ -114,8 +115,9 @@ export default function DashboardLayout({
             </nav>
           </div>
 
-          <div className="text-xs text-zinc-400 dark:text-zinc-650">
-            Fino Assistant v1.0.0
+          <div className="flex items-center justify-between border-t border-zinc-150 pt-4 dark:border-zinc-800">
+            <span className="text-xs text-zinc-455 dark:text-zinc-600">Fino v1.0.0</span>
+            <UserButton />
           </div>
         </div>
       </aside>
@@ -188,6 +190,10 @@ export default function DashboardLayout({
                     );
                   })}
                 </nav>
+              </div>
+              <div className="border-t border-zinc-150 pt-4 dark:border-zinc-800 flex items-center justify-between">
+                <span className="text-xs text-zinc-455 dark:text-zinc-600">Fino v1.0.0</span>
+                <UserButton />
               </div>
             </div>
           </div>

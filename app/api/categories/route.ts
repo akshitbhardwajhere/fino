@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { SettingsRepository } from '@/repositories/settings';
 import { db } from '@/lib/db/client';
 import { expenses } from '@/lib/db/schema';
-import { sql } from 'drizzle-orm';
+import { sql, eq } from 'drizzle-orm';
 import { logger } from '@/utils/logger';
+import { auth } from '@clerk/nextjs/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,10 +19,15 @@ const CATEGORIES_INFO = [
 
 export async function GET() {
   try {
-    const settingsRepo = new SettingsRepository();
-    const settings = await settingsRepo.getSettings();
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // Query counts and sums grouped by category from DB
+    const settingsRepo = new SettingsRepository();
+    const settings = await settingsRepo.getSettings(userId);
+
+    // Query counts and sums grouped by category from DB scoped to user
     const results = await db
       .select({
         category: expenses.category,
@@ -29,6 +35,7 @@ export async function GET() {
         total: sql<string>`coalesce(sum(${expenses.amount}), 0)`,
       })
       .from(expenses)
+      .where(eq(expenses.userId, userId))
       .groupBy(expenses.category);
 
     const categoriesData = CATEGORIES_INFO.map(cat => {

@@ -23,10 +23,15 @@ export class MessageLogRepository {
   /**
    * Fetch all message logs ordered by creation time (newest first)
    */
-  async findAll(limitVal = 100): Promise<MessageLog[]> {
-    return db
-      .select()
-      .from(messageLogs)
+  async findAll(userId?: string, limitVal = 100): Promise<MessageLog[]> {
+    const query = db.select().from(messageLogs);
+    if (userId) {
+      return query
+        .where(eq(messageLogs.userId, userId))
+        .orderBy(desc(messageLogs.createdAt))
+        .limit(limitVal);
+    }
+    return query
       .orderBy(desc(messageLogs.createdAt))
       .limit(limitVal);
   }
