@@ -215,6 +215,18 @@ export class WhatsAppService {
     }
     return sentMsg;
   }
+
+  /**
+   * Retrieves the connected user's bare JID (e.g. phone_number@s.whatsapp.net)
+   */
+  public getConnectedJid(): string | null {
+    if (!this.sock || this.status !== 'connected') {
+      return null;
+    }
+    const myJid = this.sock.user?.id;
+    if (!myJid) return null;
+    return myJid.split(':')[0] + '@s.whatsapp.net';
+  }
 }
 
 // Singleton pattern with globalThis check to prevent multiple instances during dev reloading

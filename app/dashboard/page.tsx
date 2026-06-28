@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   TrendingUp,
@@ -10,33 +10,95 @@ import {
   History,
   AlertTriangle,
   Receipt,
+  Clock,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-// Mock data for Milestone 1
-const mockRecentExpenses = [
-  { id: '1', amount: '2500.00', category: 'Travel', description: 'Gurez Trip', spentAt: 'Today, 2:30 PM' },
-  { id: '2', amount: '150.00', category: 'Food', description: 'Pizza slice', spentAt: 'Today, 1:15 PM' },
-  { id: '3', amount: '600.00', category: 'Fuel', description: 'Petrol', spentAt: 'Yesterday, 6:00 PM' },
-  { id: '4', amount: '1200.00', category: 'Shopping', description: 'Shoes', spentAt: 'June 26, 11:00 AM' },
-  { id: '5', amount: '100.00', category: 'Food', description: 'Burger', spentAt: 'June 25, 9:00 PM' },
-];
-
-const mockCategoryBreakdown = [
-  { name: 'Travel', amount: '2500.00', percentage: 61, color: 'bg-indigo-500' },
-  { name: 'Shopping', amount: '1200.00', percentage: 29, color: 'bg-pink-500' },
-  { name: 'Fuel', amount: '600.00', percentage: 14, color: 'bg-amber-500' },
-  { name: 'Food', amount: '250.00', percentage: 6, color: 'bg-emerald-500' },
-];
+interface DashboardStats {
+  timezone: string;
+  currency: string;
+  summaryTime: string;
+  todayTotal: string;
+  todayCount: number;
+  monthlyTotal: string;
+  totalMessages: number;
+  matchedMessages: number;
+  recentExpenses: Array<{
+    id: string;
+    amount: string;
+    category: string;
+    description: string;
+    spentAt: string;
+  }>;
+  categoryBreakdown: Array<{
+    name: string;
+    amount: string;
+    percentage: number;
+    color: string;
+  }>;
+}
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/dashboard/stats');
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const formatSpentAt = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const getCurrencySymbol = (currencyStr: string) => {
+    if (currencyStr.includes('($)')) return '$';
+    if (currencyStr.includes('(€)')) return '€';
+    if (currencyStr.includes('(£)')) return '£';
+    return '₹'; // Default to INR
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] w-full flex-col items-center justify-center gap-2">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600 dark:text-emerald-400" />
+        <p className="text-sm text-zinc-550">Loading dashboard metrics...</p>
+      </div>
+    );
+  }
+
+  const currencySymbol = stats ? getCurrencySymbol(stats.currency) : '₹';
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header with Welcome */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Dashboard</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-550">Dashboard</h2>
           <p className="text-zinc-500 dark:text-zinc-400">
             Welcome to Fino, your personal WhatsApp automation assistant.
           </p>
@@ -60,7 +122,7 @@ export default function DashboardPage() {
         <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-550" />
         <div className="flex-1 space-y-1">
           <h4 className="font-semibold text-amber-900 dark:text-amber-400">WhatsApp Link Required</h4>
-          <p className="text-sm text-amber-700 dark:text-amber-500">
+          <p className="text-sm text-amber-700 dark:text-amber-550">
             To start tracking expenses automatically from messages, link your WhatsApp account.
           </p>
           <div className="pt-2">
@@ -86,8 +148,12 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹2,650.00</div>
-            <p className="text-xs text-zinc-500 mt-1">From 2 transactions</p>
+            <div className="text-2xl font-bold">
+              {currencySymbol}{stats ? parseFloat(stats.todayTotal).toLocaleString() : '0.00'}
+            </div>
+            <p className="text-xs text-zinc-500 mt-1">
+              From {stats ? stats.todayCount : 0} transaction{stats?.todayCount === 1 ? '' : 's'}
+            </p>
           </CardContent>
         </Card>
 
@@ -102,8 +168,10 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹4,550.00</div>
-            <p className="text-xs text-zinc-500 mt-1">Monthly budget: ₹25,000</p>
+            <div className="text-2xl font-bold">
+              {currencySymbol}{stats ? parseFloat(stats.monthlyTotal).toLocaleString() : '0.00'}
+            </div>
+            <p className="text-xs text-zinc-500 mt-1">Total spending for this month</p>
           </CardContent>
         </Card>
 
@@ -118,8 +186,10 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-zinc-500 mt-1">9 intent matched successfully</p>
+            <div className="text-2xl font-bold">{stats ? stats.totalMessages : 0}</div>
+            <p className="text-xs text-zinc-500 mt-1">
+              {stats ? stats.matchedMessages : 0} parsed successfully as expenses
+            </p>
           </CardContent>
         </Card>
 
@@ -130,12 +200,14 @@ export default function DashboardPage() {
               Daily Summary Time
             </CardTitle>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-              <Plus className="h-4 w-4 rotate-45" />
+              <Clock className="h-4 w-4" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">11:00 PM</div>
-            <p className="text-xs text-zinc-500 mt-1">Configured timezone: IST</p>
+            <div className="text-2xl font-bold">{stats ? stats.summaryTime : '23:00'}</div>
+            <p className="text-xs text-zinc-500 mt-1">
+              Timezone: {stats ? stats.timezone : 'Asia/Kolkata'}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -156,22 +228,26 @@ export default function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent className="space-y-4">
-            {mockRecentExpenses.map((expense) => (
-              <div key={expense.id} className="flex items-center justify-between border-b border-zinc-100 pb-3 last:border-0 last:pb-0 dark:border-zinc-800">
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{expense.description}</p>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-md bg-zinc-100 px-1.5 py-0.5 text-xxs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                      {expense.category}
-                    </span>
-                    <span className="text-xs text-zinc-400">{expense.spentAt}</span>
+            {stats && stats.recentExpenses.length > 0 ? (
+              stats.recentExpenses.map((expense) => (
+                <div key={expense.id} className="flex items-center justify-between border-b border-zinc-100 pb-3 last:border-0 last:pb-0 dark:border-zinc-800">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{expense.description}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center rounded-md bg-zinc-100 px-1.5 py-0.5 text-xxs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                        {expense.category}
+                      </span>
+                      <span className="text-xs text-zinc-400">{formatSpentAt(expense.spentAt)}</span>
+                    </div>
+                  </div>
+                  <div className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
+                    {currencySymbol}{parseFloat(expense.amount).toFixed(2)}
                   </div>
                 </div>
-                <div className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
-                  ₹{expense.amount}
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-zinc-500 py-4 text-center">No expenses recorded yet.</p>
+            )}
           </CardContent>
         </Card>
 
@@ -182,20 +258,26 @@ export default function DashboardPage() {
             <CardDescription>Expense distribution for this month</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {mockCategoryBreakdown.map((category) => (
-              <div key={category.name} className="space-y-2">
-                <div className="flex items-center justify-between text-sm font-medium">
-                  <span className="text-zinc-650 dark:text-zinc-355">{category.name}</span>
-                  <span className="text-zinc-900 dark:text-zinc-50 font-semibold">₹{category.amount} ({category.percentage}%)</span>
+            {stats && stats.categoryBreakdown.length > 0 ? (
+              stats.categoryBreakdown.map((category) => (
+                <div key={category.name} className="space-y-2">
+                  <div className="flex items-center justify-between text-sm font-medium">
+                    <span className="text-zinc-650 dark:text-zinc-400">{category.name}</span>
+                    <span className="text-zinc-900 dark:text-zinc-50 font-semibold">
+                      {currencySymbol}{parseFloat(category.amount).toFixed(2)} ({category.percentage}%)
+                    </span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-zinc-100 dark:bg-zinc-800">
+                    <div
+                      className={`h-2 rounded-full ${category.color}`}
+                      style={{ width: `${category.percentage}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="h-2 w-full rounded-full bg-zinc-100 dark:bg-zinc-800">
-                  <div
-                    className={`h-2 rounded-full ${category.color}`}
-                    style={{ width: `${category.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-zinc-550 py-4 text-center">No category breakdown available.</p>
+            )}
           </CardContent>
         </Card>
       </div>

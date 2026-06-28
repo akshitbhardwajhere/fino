@@ -93,4 +93,70 @@ Rules for parsing:
       };
     }
   }
+
+  /**
+   * Generates a friendly daily summary message using Groq AI
+   */
+  public static async generateDailySummary(
+    expensesList: Array<{ amount: string; category: string; description: string | null }>,
+    currency: string
+  ): Promise<string> {
+    if (!apiKey) {
+      logger.error('Cannot generate daily summary with Groq: API key is not configured.');
+      return '⚠️ AI Summary Configuration Error: Groq API key is not set on the server.';
+    }
+
+    try {
+      logger.info(`Sending ${expensesList.length} expenses to Groq for daily summary generation`);
+
+      const totalAmount = expensesList.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+
+      const expensesFormatted = expensesList
+        .map(
+          (item) =>
+            `- ${currency.split(' ')[0]} ${parseFloat(item.amount).toFixed(2)} on "${
+              item.description || 'Unspecified'
+            }" [Category: ${item.category}]`
+        )
+        .join('\n');
+
+      const promptContent = `Here is the list of expenses recorded today (total: ${currency.split(' ')[0]} ${totalAmount.toFixed(2)}):
+${expensesFormatted || 'No expenses recorded today.'}
+
+Please draft a friendly, professional, and visually clear daily summary broadcast for the user.
+Use bullet points and bold headers to summarize spending by category. Keep the tone encouraging and brief.
+Format the currency using ${currency}. Do not output JSON, output a clean markdown message ready for WhatsApp.`;
+
+      const completion = await groq.chat.completions.create({
+        messages: [
+          {
+            role: 'system',
+            content: `You are Fino, a personal WhatsApp automation assistant. Your job is to draft a daily spending summary message for the user based on their tracked expenses.
+Your response should be formatted using WhatsApp markdown (*bold*, _italic_, ~strikethrough~, monospace \`\`\`, bullet points).
+Be concise, clear, and encouraging. Focus on showing:
+1. Total spent today.
+2. Breakdown by category.
+3. A friendly closing remark.`,
+          },
+          {
+            role: 'user',
+            content: promptContent,
+          },
+        ],
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0.7,
+      });
+
+      const responseText = completion.choices[0]?.message?.content;
+      if (!responseText) {
+        throw new Error('Groq returned an empty response for daily summary.');
+      }
+
+      return responseText.trim();
+    } catch (error) {
+      logger.error(error, 'Error generating daily summary with Groq AI');
+      const totalAmount = expensesList.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+      return `📊 *Daily Expense Summary*\n\nTotal Spent: ${currency} ${totalAmount.toFixed(2)}\n\n(Fallback summary triggered due to AI error. Please check server logs.)`;
+    }
+  }
 }

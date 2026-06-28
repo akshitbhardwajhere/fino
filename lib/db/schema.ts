@@ -27,3 +27,12 @@ export const dailySummaries = pgTable('daily_summaries', {
   summary: text('summary').notNull(),
   sentAt: timestamp('sent_at', { withTimezone: true }),
 });
+
+export const settings = pgTable('settings', {
+  id: varchar('id', { length: 50 }).primaryKey().default('global'),
+  aiProvider: varchar('ai_provider', { length: 50 }).default('gemini').notNull(),
+  timezone: varchar('timezone', { length: 100 }).default('Asia/Kolkata').notNull(),
+  currency: varchar('currency', { length: 50 }).default('INR (₹)').notNull(),
+  summaryTime: varchar('summary_time', { length: 5 }).default('23:00').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});

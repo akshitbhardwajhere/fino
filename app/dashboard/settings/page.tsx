@@ -12,10 +12,29 @@ export default function SettingsPage() {
   const [currency, setCurrency] = useState('INR (₹)');
   const [summaryTime, setSummaryTime] = useState('23:00');
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [waStatus, setWaStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          setAiProvider(data.aiProvider);
+          setTimezone(data.timezone);
+          setCurrency(data.currency);
+          setSummaryTime(data.summaryTime);
+        }
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -46,9 +65,23 @@ export default function SettingsPage() {
     };
   }, []);
 
-  const handleSave = () => {
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aiProvider, timezone, currency, summaryTime }),
+      });
+      if (res.ok) {
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 3000);
+      }
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -61,8 +94,8 @@ export default function SettingsPage() {
           <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Settings</h2>
           <p className="text-zinc-500 dark:text-zinc-400">Configure your personal assistant preferences and credentials.</p>
         </div>
-        <Button onClick={handleSave} className="gap-2">
-          <Save className="h-4 w-4" /> {isSaved ? 'Saved!' : 'Save Changes'}
+        <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+          <Save className="h-4 w-4" /> {isSaving ? 'Saving...' : isSaved ? 'Saved!' : 'Save Changes'}
         </Button>
       </div>
 
