@@ -43,3 +43,5 @@ next-env.d.ts
 # WhatsApp authentication sessions
 /.wwebjs_auth
 /.baileys_auth
+
+prompts.txt
