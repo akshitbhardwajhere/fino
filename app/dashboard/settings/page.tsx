@@ -210,7 +210,7 @@ function CountrySelect({
               onClick={(e) => e.stopPropagation()} // Prevent closing
             />
           </div>
-          <div className="max-h-48 overflow-y-auto space-y-0.5">
+          <div className="max-h-48 overflow-y-auto space-y-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {filteredCountries.length > 0 ? (
               filteredCountries.map((c) => (
                 <button
@@ -223,15 +223,15 @@ function CountrySelect({
                   className={cn(
                     "flex items-center justify-between w-full px-2.5 py-1.5 text-xs rounded-lg transition-colors text-left cursor-pointer",
                     c.dial === value
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold"
-                      : "text-zinc-700 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold"
+                      : "text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 hover:text-zinc-950 dark:hover:text-white"
                   )}
                 >
                   <span className="flex items-center gap-2 truncate mr-2">
                     <span>{c.flag}</span>
                     <span className="truncate">{c.name}</span>
                   </span>
-                  <span className="text-zinc-400 font-medium shrink-0">+{c.dial}</span>
+                  <span className="text-zinc-500 dark:text-zinc-400 font-semibold shrink-0">+{c.dial}</span>
                 </button>
               ))
             ) : (
@@ -509,7 +509,7 @@ export default function SettingsPage() {
       <div className="grid gap-6 md:grid-cols-5">
 
         {/* Left Column: Regional Settings (Glassmorphic) */}
-        <div className="md:col-span-3 space-y-6 order-2 md:order-1 transition-all duration-300">
+        <div className="md:col-span-3 space-y-6 order-2 md:order-1 transition-all duration-300 relative z-10">
           <Card className="border border-zinc-200/50 dark:border-zinc-800/50 bg-white/75 dark:bg-zinc-900/75 backdrop-blur-md shadow-sm hover:shadow-md transition-all duration-300">
             <CardHeader className="border-b border-zinc-100/50 dark:border-zinc-850/50 pb-4">
               <div className="flex items-center gap-3">
@@ -574,10 +574,10 @@ export default function SettingsPage() {
         </div>
 
         {/* Right Column: WhatsApp Link Card (Responsive & Animated) */}
-        <div className="md:col-span-2 space-y-6 order-1 md:order-2">
+        <div className="md:col-span-2 space-y-6 order-1 md:order-2 relative z-20">
           <Card
             className={cn(
-              "border bg-white/75 dark:bg-zinc-900/75 backdrop-blur-md shadow-sm hover:shadow-md transition-all duration-500 overflow-hidden flex flex-col justify-between",
+              "border bg-white/75 dark:bg-zinc-900/75 backdrop-blur-md shadow-sm hover:shadow-md transition-all duration-500 flex flex-col justify-between",
               waStatus === 'connected'
                 ? "border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.06)]"
                 : "border-zinc-200/50 dark:border-zinc-800/50"
