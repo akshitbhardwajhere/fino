@@ -16,7 +16,8 @@ import {
   Copy,
   Check,
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  ChevronDown
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -26,7 +27,14 @@ export default function SettingsPage() {
   const [timezone, setTimezone] = useState('Asia/Kolkata');
   const [currency, setCurrency] = useState('INR (₹)');
   const [summaryTime, setSummaryTime] = useState('23:00');
+  
+  // Phone number state variables
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [preferencesCountryCode, setPreferencesCountryCode] = useState('91');
+  const [preferencesLocalNumber, setPreferencesLocalNumber] = useState('');
+  const [pairingCountryCode, setPairingCountryCode] = useState('91');
+  const [pairingLocalNumber, setPairingLocalNumber] = useState('');
+
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -38,11 +46,28 @@ export default function SettingsPage() {
 
   // Phone pairing specific states
   const [activeTab, setActiveTab] = useState<'qr' | 'pairing'>('qr');
-  const [pairingPhoneNumber, setPairingPhoneNumber] = useState('');
   const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [isRequestingCode, setIsRequestingCode] = useState(false);
   const [pairingError, setPairingError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Helper to split full international numbers into country code and local part
+  const parsePhoneNumber = (fullNumber: string) => {
+    const clean = fullNumber.replace(/\D/g, '');
+    const codes = ['971', '966', '91', '49', '65', '61', '44', '1'];
+    for (const code of codes) {
+      if (clean.startsWith(code)) {
+        return {
+          countryCode: code,
+          localNumber: clean.slice(code.length),
+        };
+      }
+    }
+    return {
+      countryCode: '91',
+      localNumber: clean,
+    };
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -56,7 +81,12 @@ export default function SettingsPage() {
           setSummaryTime(data.summaryTime);
           const num = data.whatsappJid ? data.whatsappJid.split('@')[0] : '';
           setPhoneNumber(num);
-          setPairingPhoneNumber(num);
+
+          const parsed = parsePhoneNumber(num);
+          setPreferencesCountryCode(parsed.countryCode);
+          setPreferencesLocalNumber(parsed.localNumber);
+          setPairingCountryCode(parsed.countryCode);
+          setPairingLocalNumber(parsed.localNumber);
         }
       } catch (err) {
         console.error('Failed to load settings:', err);
@@ -96,14 +126,16 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    const finalPhoneNumber = preferencesCountryCode + preferencesLocalNumber;
     try {
       const res = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ aiProvider, timezone, currency, summaryTime, phoneNumber }),
+        body: JSON.stringify({ aiProvider, timezone, currency, summaryTime, phoneNumber: finalPhoneNumber }),
       });
       if (res.ok) {
         setIsSaved(true);
+        setPhoneNumber(finalPhoneNumber);
         setTimeout(() => setIsSaved(false), 3000);
       }
     } catch (err) {
@@ -130,8 +162,9 @@ export default function SettingsPage() {
   };
 
   const handleRequestPairingCode = async () => {
-    if (!pairingPhoneNumber) {
-      setPairingError('Please enter your phone number first.');
+    const finalPairingNumber = pairingCountryCode + pairingLocalNumber;
+    if (!finalPairingNumber || !pairingLocalNumber) {
+      setPairingError('Please enter your phone number.');
       return;
     }
     
@@ -143,7 +176,7 @@ export default function SettingsPage() {
       const res = await fetch('/api/whatsapp/pairing-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: pairingPhoneNumber }),
+        body: JSON.stringify({ phoneNumber: finalPairingNumber }),
       });
 
       const data = await res.json();
@@ -202,7 +235,7 @@ export default function SettingsPage() {
           onClick={handleSave}
           disabled={isSaving}
           className={cn(
-            "w-full sm:w-auto gap-2 shadow-md transition-all duration-300 font-semibold active:scale-98",
+            "w-full sm:w-auto gap-2 shadow-md transition-all duration-300 font-semibold active:scale-98 cursor-pointer",
             isSaved && "bg-emerald-650 dark:bg-emerald-600"
           )}
         >
@@ -248,16 +281,21 @@ export default function SettingsPage() {
                   <label className="text-xs font-semibold text-zinc-650 dark:text-zinc-350 flex items-center gap-1.5">
                     <DollarSign className="h-3.5 w-3.5 text-zinc-400" /> Currency Symbol
                   </label>
-                  <select
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full rounded-lg border border-zinc-200/80 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
-                  >
-                    <option value="INR (₹)">INR (₹)</option>
-                    <option value="USD ($)">USD ($)</option>
-                    <option value="EUR (€)">EUR (€)</option>
-                    <option value="GBP (£)">GBP (£)</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                      className="w-full rounded-lg border border-zinc-200/80 bg-white px-3 py-2.5 pr-10 text-sm outline-none appearance-none transition-all focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 cursor-pointer"
+                    >
+                      <option className="dark:bg-zinc-900 dark:text-zinc-100" value="INR (₹)">INR (₹)</option>
+                      <option className="dark:bg-zinc-900 dark:text-zinc-100" value="USD ($)">USD ($)</option>
+                      <option className="dark:bg-zinc-900 dark:text-zinc-100" value="EUR (€)">EUR (€)</option>
+                      <option className="dark:bg-zinc-900 dark:text-zinc-100" value="GBP (£)">GBP (£)</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-zinc-400">
+                      <ChevronDown className="h-4 w-4" />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Timezone selector */}
@@ -265,16 +303,21 @@ export default function SettingsPage() {
                   <label className="text-xs font-semibold text-zinc-650 dark:text-zinc-350 flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5 text-zinc-400" /> Timezone
                   </label>
-                  <select
-                    value={timezone}
-                    onChange={(e) => setTimezone(e.target.value)}
-                    className="w-full rounded-lg border border-zinc-200/80 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200"
-                  >
-                    <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-                    <option value="UTC">UTC</option>
-                    <option value="America/New_York">America/New_York (EST/EDT)</option>
-                    <option value="Europe/London">Europe/London (BST/GMT)</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={timezone}
+                      onChange={(e) => setTimezone(e.target.value)}
+                      className="w-full rounded-lg border border-zinc-200/80 bg-white px-3 py-2.5 pr-10 text-sm outline-none appearance-none transition-all focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 cursor-pointer"
+                    >
+                      <option className="dark:bg-zinc-900 dark:text-zinc-100" value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                      <option className="dark:bg-zinc-900 dark:text-zinc-100" value="UTC">UTC</option>
+                      <option className="dark:bg-zinc-900 dark:text-zinc-100" value="America/New_York">America/New_York (EST/EDT)</option>
+                      <option className="dark:bg-zinc-900 dark:text-zinc-100" value="Europe/London">Europe/London (BST/GMT)</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-zinc-400">
+                      <ChevronDown className="h-4 w-4" />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -297,20 +340,42 @@ export default function SettingsPage() {
               </div>
 
               {/* Saved WhatsApp Number linked to account */}
-              <div className="space-y-2 pt-4 border-t border-zinc-100 dark:border-zinc-850">
+              <div className="space-y-2.5 pt-4 border-t border-zinc-100 dark:border-zinc-850">
                 <label className="text-xs font-semibold text-zinc-650 dark:text-zinc-350">
                   WhatsApp Account Number
                 </label>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <input
-                    type="tel"
-                    placeholder="e.g. 919598547460"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                    className="w-full sm:max-w-xs rounded-lg border border-zinc-200/80 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-250"
-                  />
+                <div className="flex flex-col gap-3">
+                  {/* Premium joined selector group */}
+                  <div className="flex rounded-lg border border-zinc-200/80 dark:border-zinc-850 bg-white dark:bg-zinc-950 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/30 transition-all overflow-hidden max-w-sm">
+                    <div className="relative border-r border-zinc-200 dark:border-zinc-850 bg-zinc-50/50 dark:bg-zinc-900/50 shrink-0">
+                      <select
+                        value={preferencesCountryCode}
+                        onChange={(e) => setPreferencesCountryCode(e.target.value)}
+                        className="appearance-none bg-transparent pl-3 pr-8 py-2.5 text-sm font-semibold outline-none text-zinc-800 dark:text-zinc-200 cursor-pointer"
+                      >
+                        <option className="dark:bg-zinc-900 dark:text-zinc-100" value="91">🇮🇳 +91</option>
+                        <option className="dark:bg-zinc-900 dark:text-zinc-100" value="1">🇺🇸 +1</option>
+                        <option className="dark:bg-zinc-900 dark:text-zinc-100" value="44">🇬🇧 +44</option>
+                        <option className="dark:bg-zinc-900 dark:text-zinc-100" value="971">🇦🇪 +971</option>
+                        <option className="dark:bg-zinc-900 dark:text-zinc-100" value="49">🇩🇪 +49</option>
+                        <option className="dark:bg-zinc-900 dark:text-zinc-100" value="65">🇸🇬 +65</option>
+                        <option className="dark:bg-zinc-900 dark:text-zinc-100" value="61">🇦🇺 +61</option>
+                        <option className="dark:bg-zinc-900 dark:text-zinc-100" value="966">🇸🇦 +966</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-zinc-400">
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </div>
+                    </div>
+                    <input
+                      type="tel"
+                      placeholder="9622845669"
+                      value={preferencesLocalNumber}
+                      onChange={(e) => setPreferencesLocalNumber(e.target.value.replace(/\D/g, ''))}
+                      className="w-full bg-transparent px-3 py-2.5 text-sm outline-none border-none text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+                    />
+                  </div>
                   <span className="text-xxs text-zinc-500 leading-normal">
-                    Include country code, no + or spaces. Incoming messages from this number will be matched to your account.
+                    Select your country code and enter the rest of the phone number. Incoming messages from this number will be matched to your account.
                   </span>
                 </div>
               </div>
@@ -371,7 +436,7 @@ export default function SettingsPage() {
                       className={cn(
                         "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer",
                         activeTab === 'qr'
-                          ? "bg-white dark:bg-zinc-850 text-zinc-900 dark:text-zinc-50 shadow-sm"
+                          ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50"
                           : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
                       )}
                     >
@@ -386,7 +451,7 @@ export default function SettingsPage() {
                       className={cn(
                         "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer",
                         activeTab === 'pairing'
-                          ? "bg-white dark:bg-zinc-850 text-zinc-900 dark:text-zinc-50 shadow-sm"
+                          ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50"
                           : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
                       )}
                     >
@@ -459,15 +524,38 @@ export default function SettingsPage() {
                           <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
                             Phone Number
                           </label>
-                          <input
-                            type="tel"
-                            placeholder="e.g. 919598547460"
-                            value={pairingPhoneNumber}
-                            onChange={(e) => setPairingPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                            className="w-full rounded-lg border border-zinc-200/80 bg-white px-3 py-2.5 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-250"
-                          />
-                          <p className="text-[10px] text-zinc-400">
-                            Enter the phone number in full international format (no spaces, e.g., 919598547460).
+                          
+                          {/* Premium joined selector group */}
+                          <div className="flex rounded-lg border border-zinc-200/80 dark:border-zinc-850 bg-white dark:bg-zinc-950 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/30 transition-all overflow-hidden w-full">
+                            <div className="relative border-r border-zinc-200 dark:border-zinc-850 bg-zinc-50/50 dark:bg-zinc-900/50 shrink-0">
+                              <select
+                                value={pairingCountryCode}
+                                onChange={(e) => setPairingCountryCode(e.target.value)}
+                                className="appearance-none bg-transparent pl-3 pr-8 py-2.5 text-sm font-semibold outline-none text-zinc-800 dark:text-zinc-200 cursor-pointer"
+                              >
+                                <option className="dark:bg-zinc-900 dark:text-zinc-100" value="91">🇮🇳 +91</option>
+                                <option className="dark:bg-zinc-900 dark:text-zinc-100" value="1">🇺🇸 +1</option>
+                                <option className="dark:bg-zinc-900 dark:text-zinc-100" value="44">🇬🇧 +44</option>
+                                <option className="dark:bg-zinc-900 dark:text-zinc-100" value="971">🇦🇪 +971</option>
+                                <option className="dark:bg-zinc-900 dark:text-zinc-100" value="49">🇩🇪 +49</option>
+                                <option className="dark:bg-zinc-900 dark:text-zinc-100" value="65">🇸🇬 +65</option>
+                                <option className="dark:bg-zinc-900 dark:text-zinc-100" value="61">🇦🇺 +61</option>
+                                <option className="dark:bg-zinc-900 dark:text-zinc-100" value="966">🇸🇦 +966</option>
+                              </select>
+                              <div className="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-zinc-400">
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              </div>
+                            </div>
+                            <input
+                              type="tel"
+                              placeholder="9622845669"
+                              value={pairingLocalNumber}
+                              onChange={(e) => setPairingLocalNumber(e.target.value.replace(/\D/g, ''))}
+                              className="w-full bg-transparent px-3 py-2.5 text-sm outline-none border-none text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-650"
+                            />
+                          </div>
+                          <p className="text-[10px] text-zinc-400 pt-1">
+                            Select country code and enter the phone number (no spaces).
                           </p>
                         </div>
 
@@ -481,8 +569,8 @@ export default function SettingsPage() {
                         <Button
                           type="button"
                           onClick={handleRequestPairingCode}
-                          disabled={isRequestingCode || !pairingPhoneNumber}
-                          className="w-full gap-2 text-xs font-semibold py-2.5 shadow-sm active:scale-98"
+                          disabled={isRequestingCode || !pairingLocalNumber}
+                          className="w-full gap-2 text-xs font-semibold py-2.5 shadow-sm active:scale-98 cursor-pointer"
                         >
                           {isRequestingCode ? (
                             <>
@@ -535,7 +623,7 @@ export default function SettingsPage() {
                           variant="outline"
                           size="sm"
                           onClick={copyToClipboard}
-                          className="gap-2 transition-all duration-200 active:scale-95 border-emerald-500/25 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-emerald-650 dark:text-emerald-450"
+                          className="gap-2 transition-all duration-200 active:scale-95 border-emerald-500/25 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-emerald-650 dark:text-emerald-450 cursor-pointer"
                         >
                           {copied ? (
                             <>
@@ -585,7 +673,7 @@ export default function SettingsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full gap-2 font-semibold transition-all duration-300 text-xs active:scale-98 border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-950"
+                className="w-full gap-2 font-semibold transition-all duration-300 text-xs active:scale-98 border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-950 cursor-pointer"
                 onClick={handleRefreshQr}
                 disabled={isLoadingStatus || isRefreshing}
               >
