@@ -55,7 +55,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid Summary Time format (expected HH:MM)' }, { status: 400 });
     }
 
-    const whatsappJid = phoneNumber ? phoneNumber.replace(/\D/g, '') + '@s.whatsapp.net' : null;
+    const cleanNumber = phoneNumber ? phoneNumber.replace(/\D/g, '') : '';
+    const whatsappJid = cleanNumber ? `${cleanNumber}@s.whatsapp.net` : null;
 
     const settingsRepo = new SettingsRepository();
     const updatedSettings = await settingsRepo.updateSettings(userId, {

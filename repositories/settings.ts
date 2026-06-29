@@ -1,7 +1,7 @@
 import { db } from '@/lib/db/client';
 import { settings } from '@/lib/db/schema';
 import { type Settings, type NewSettings } from '@/types/db';
-import { eq, like } from 'drizzle-orm';
+import { eq, like, and, ne } from 'drizzle-orm';
 
 export class SettingsRepository {
   /**
@@ -41,6 +41,20 @@ export class SettingsRepository {
    * Inserts the record if it does not exist.
    */
   async updateSettings(userId: string, data: Partial<NewSettings>): Promise<Settings> {
+    if (data.whatsappJid) {
+      // Unlink this whatsappJid from other users to ensure uniqueness
+      const cleanJid = data.whatsappJid.split('@')[0];
+      await db
+        .update(settings)
+        .set({ whatsappJid: null, updatedAt: new Date() })
+        .where(
+          and(
+            like(settings.whatsappJid, `${cleanJid}%`),
+            ne(settings.id, userId)
+          )
+        );
+    }
+
     const [existing] = await db
       .select()
       .from(settings)
