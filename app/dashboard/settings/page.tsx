@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -98,15 +98,21 @@ function CustomSelect({
   const [isOpen, setIsOpen] = useState(false);
   const selectedOption = options.find(opt => opt.value === value) || options[0];
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!isOpen) return;
-    const handleOutsideClick = () => setIsOpen(false);
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
     window.addEventListener('click', handleOutsideClick);
     return () => window.removeEventListener('click', handleOutsideClick);
   }, [isOpen]);
 
   return (
-    <div className={cn("relative", className)} onClick={(e) => e.stopPropagation()}>
+    <div ref={containerRef} className={cn("relative", className)}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -118,7 +124,7 @@ function CustomSelect({
         </span>
         <ChevronDown className={cn("h-4 w-4 text-zinc-400 transition-transform duration-200", isOpen && "transform rotate-180")} />
       </button>
-      
+
       {isOpen && (
         <div className="absolute z-50 left-0 right-0 mt-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/95 backdrop-blur-md p-1.5 shadow-xl max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150">
           {options.map((opt) => (
@@ -158,24 +164,29 @@ function CountrySelect({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
-  
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const selectedCountry = countries.find(c => c.dial === value) || countries[0];
 
   useEffect(() => {
     if (!isOpen) return;
     setSearch('');
-    const handleOutsideClick = () => setIsOpen(false);
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
     window.addEventListener('click', handleOutsideClick);
     return () => window.removeEventListener('click', handleOutsideClick);
   }, [isOpen]);
 
-  const filteredCountries = countries.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredCountries = countries.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.dial.includes(search)
   );
 
   return (
-    <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+    <div ref={containerRef} className="relative shrink-0 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 rounded-l-xl">
       <button
         type="button"
         disabled={disabled}
@@ -238,11 +249,11 @@ export default function SettingsPage() {
   const [timezone, setTimezone] = useState('Asia/Kolkata');
   const [currency, setCurrency] = useState('INR (₹)');
   const [summaryTime, setSummaryTime] = useState('23:00');
-  
+
   // Single, unified phone number states
   const [phoneCountryCode, setPhoneCountryCode] = useState('91');
   const [phoneLocalNumber, setPhoneLocalNumber] = useState('');
-  
+
   // Backup read-only display for loaded number if any
   const [phoneNumber, setPhoneNumber] = useState('');
   const [connectedNumber, setConnectedNumber] = useState<string | null>(null);
@@ -293,7 +304,7 @@ export default function SettingsPage() {
           setSummaryTime(data.summaryTime);
           const num = data.whatsappJid ? data.whatsappJid.split('@')[0] : '';
           setPhoneNumber(num);
-          
+
           const parsed = parsePhoneNumber(num);
           setPhoneCountryCode(parsed.countryCode);
           setPhoneLocalNumber(parsed.localNumber);
@@ -381,7 +392,7 @@ export default function SettingsPage() {
       setPairingError('Please enter your phone number.');
       return;
     }
-    
+
     setIsRequestingCode(true);
     setPairingError(null);
     setPairingCode(null);
@@ -454,7 +465,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto px-4 md:px-0 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
+
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -496,7 +507,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-5">
-        
+
         {/* Left Column: Regional Settings (Glassmorphic) */}
         <div className="md:col-span-3 space-y-6 order-2 md:order-1 transition-all duration-300">
           <Card className="border border-zinc-200/50 dark:border-zinc-800/50 bg-white/75 dark:bg-zinc-900/75 backdrop-blur-md shadow-sm hover:shadow-md transition-all duration-300">
@@ -515,7 +526,7 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-5 pt-5">
               <div className="grid gap-4 sm:grid-cols-2">
-                
+
                 {/* Currency selector */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-zinc-650 dark:text-zinc-350 flex items-center gap-1.5">
@@ -593,7 +604,7 @@ export default function SettingsPage() {
                       {waStatus === 'connected' ? 'Session successfully active' : 'Pair with WhatsApp'}
                     </CardDescription>
                   </div>
-                  
+
                   {/* Small Connected badge */}
                   {waStatus === 'connected' && (
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-750 dark:text-emerald-400 rounded-full animate-pulse">
@@ -604,7 +615,7 @@ export default function SettingsPage() {
               </CardHeader>
 
               <CardContent className="p-6 space-y-4">
-                
+
                 {/* Selector Tabs (QR or Phone pairing) - Displayed only if not connected */}
                 {waStatus !== 'connected' && (
                   <div className="pb-2">
@@ -644,13 +655,13 @@ export default function SettingsPage() {
                 )}
 
                 <div className="flex flex-col items-center justify-center pt-2">
-                  
+
                   {isLoadingStatus ? (
                     <div className="flex h-[200px] w-full items-center justify-center rounded-xl bg-zinc-50/50 dark:bg-zinc-950/20">
                       <RefreshCw className="h-6 w-6 animate-spin text-zinc-400" />
                     </div>
                   ) : waStatus === 'connected' ? (
-                    
+
                     /* Connected Success View */
                     <div className="flex flex-col items-center justify-center py-6 text-center animate-in zoom-in-95 duration-300">
                       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 mb-4 shadow-sm">
@@ -660,7 +671,7 @@ export default function SettingsPage() {
                       <p className="text-xs text-zinc-500 mt-1 max-w-[200px] leading-relaxed">
                         Fino is connected to WhatsApp. Send expense texts to start tracking.
                       </p>
-                      
+
                       {connectedNumber && (
                         <div className="mt-4 px-3 py-1.5 rounded-lg bg-zinc-55 dark:bg-zinc-950 border border-zinc-200/50 dark:border-zinc-800/80 text-xs font-semibold text-zinc-650 dark:text-zinc-350">
                           Connected Number: <span className="text-zinc-900 dark:text-zinc-100 font-mono">+{connectedNumber}</span>
@@ -668,7 +679,7 @@ export default function SettingsPage() {
                       )}
                     </div>
                   ) : activeTab === 'qr' ? (
-                    
+
                     /* Tab 1: QR Code View */
                     <div className="flex flex-col items-center space-y-4 animate-in fade-in duration-300 w-full">
                       {qrCode ? (
@@ -688,7 +699,7 @@ export default function SettingsPage() {
                           <span className="text-xs font-semibold text-zinc-500">Generating secure QR code...</span>
                         </div>
                       )}
-                      
+
                       <div className="text-center space-y-1.5 max-w-[240px]">
                         <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
                           Scan with your WhatsApp app
@@ -699,20 +710,20 @@ export default function SettingsPage() {
                       </div>
                     </div>
                   ) : (
-                    
+
                     /* Tab 2: Phone Pairing View */
                     <div className="flex flex-col items-center space-y-4 animate-in fade-in duration-300 w-full">
-                      
+
                       {!pairingCode ? (
-                        
+
                         /* Phone number input form (placed under Phone Pairing tab) */
                         <div className="space-y-3.5 w-full text-left">
                           <div className="space-y-1.5">
                             <label className="text-xs font-semibold text-zinc-650 dark:text-zinc-350">
                               WhatsApp Phone Number
                             </label>
-                            
-                            <div className="flex rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/30 transition-all overflow-hidden w-full shadow-sm">
+
+                            <div className="flex rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/30 transition-all w-full shadow-sm">
                               <CountrySelect
                                 value={phoneCountryCode}
                                 onChange={setPhoneCountryCode}
@@ -757,13 +768,13 @@ export default function SettingsPage() {
                           </Button>
                         </div>
                       ) : (
-                        
+
                         /* Pairing Code display */
                         <div className="flex flex-col items-center py-2 w-full animate-in zoom-in-95 duration-300">
                           <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold mb-1.5">
                             Pairing Code
                           </span>
-                          
+
                           {/* Beautiful Monospace segmented display */}
                           <div className="flex items-center gap-1.5 mb-4">
                             <div className="flex gap-1">
@@ -821,7 +832,7 @@ export default function SettingsPage() {
                               <li>Enter the 8-character code shown above.</li>
                             </ol>
                           </div>
-                          
+
                           <button
                             type="button"
                             onClick={() => {
@@ -839,7 +850,7 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </div>
-            
+
             {/* Footer with Reset Session action */}
             <CardFooter className="border-t border-zinc-100/50 dark:border-zinc-850/50 p-4 flex justify-center">
               <Button
@@ -853,8 +864,8 @@ export default function SettingsPage() {
                 {isRefreshing
                   ? 'Resetting...'
                   : waStatus === 'connected'
-                  ? 'Disconnect / Reset Session'
-                  : 'Refresh WhatsApp Code'}
+                    ? 'Disconnect / Reset Session'
+                    : 'Refresh WhatsApp Code'}
               </Button>
             </CardFooter>
           </Card>
