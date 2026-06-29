@@ -189,6 +189,61 @@ export class WhatsAppService {
           const remoteJid = msg.key.remoteJid;
           if (!remoteJid) continue;
 
+          const settingsRepo = new SettingsRepository();
+          const botJid = this.getConnectedJid();
+          
+          if (!botJid) {
+            logger.warn('No connected JID found when processing message');
+            continue;
+          }
+
+          const chatJid = remoteJid;
+          
+          // Function to extract the raw ID part of a JID
+          const getJidId = (jid: string) => jid.split('@')[0].split(':')[0];
+
+          const user = this.sock?.user;
+          const botId = getJidId(botJid);
+          const botLid = user?.lid ? getJidId(user.lid) : null;
+
+          const chatId = getJidId(chatJid);
+          const chatAltId = msg.key.remoteJidAlt ? getJidId(msg.key.remoteJidAlt) : null;
+
+          // A message is a self-chat message if the chat ID or chat alternate ID matches the bot ID or bot LID
+          const isSelfChat = 
+            chatId === botId || 
+            (botLid !== null && chatId === botLid) ||
+            (chatAltId !== null && chatAltId === botId) ||
+            (chatAltId !== null && botLid !== null && chatAltId === botLid);
+
+          // Check if this bot session belongs to a user's personal linked WhatsApp account
+          const botSettings = await settingsRepo.getSettingsByWhatsappJid(botJid);
+          // Also try checking by bot LID if available
+          let isPersonalAccount = !!botSettings;
+          if (!isPersonalAccount && user?.lid) {
+            const botLidJid = user.lid.split(':')[0] + '@lid';
+            const botLidSettings = await settingsRepo.getSettingsByWhatsappJid(botLidJid);
+            isPersonalAccount = !!botLidSettings;
+          }
+
+          if (isPersonalAccount) {
+            // Personal self-chat mode: ONLY process messages in the self-chat. Ignore all other conversations.
+            if (!isSelfChat) {
+              continue;
+            }
+          } else {
+            // Dedicated bot mode:
+            // 1. Ignore our own outgoing messages to other numbers.
+            if (msg.key.fromMe && !isSelfChat) {
+              continue;
+            }
+            // 2. Ignore messages in group chats (group JIDs end with @g.us)
+            if (chatJid.endsWith('@g.us')) {
+              continue;
+            }
+          }
+
+          // Message passed security/privacy filters. Safe to log and process.
           logger.info(`WhatsApp message received from ${remoteJid}: "${text}"`);
 
           try {
@@ -202,7 +257,6 @@ export class WhatsAppService {
           }
 
           // Look up user settings by whatsappJid (check alternate JID first if present)
-          const settingsRepo = new SettingsRepository();
           const jidsToTry = [remoteJid];
           if (msg.key.remoteJidAlt) {
             jidsToTry.unshift(msg.key.remoteJidAlt);
