@@ -37,6 +37,27 @@ async function startBot() {
         res.writeHead(500);
         res.end(JSON.stringify({ success: false, error: err.message }));
       }
+    } else if (req.url === '/pairing-code' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk.toString();
+      });
+      req.on('end', async () => {
+        try {
+          const { phoneNumber } = JSON.parse(body);
+          if (!phoneNumber) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ success: false, error: 'Phone number is required' }));
+            return;
+          }
+          const code = await whatsappService.requestPairingCode(phoneNumber);
+          res.writeHead(200);
+          res.end(JSON.stringify({ success: true, code }));
+        } catch (err: any) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
     } else {
       res.writeHead(404);
       res.end(JSON.stringify({ error: 'Not Found' }));

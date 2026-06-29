@@ -69,6 +69,33 @@ export class WhatsAppService {
     await this.initialize();
   }
 
+  /**
+   * Requests a pairing code for the given phone number.
+   */
+  public async requestPairingCode(phoneNumber: string): Promise<string> {
+    if (!this.sock) {
+      await this.initialize();
+    }
+    
+    if (!this.sock) {
+      throw new Error('WhatsApp service not initialized');
+    }
+
+    if (this.sock.authState.creds.registered) {
+      throw new Error('WhatsApp is already linked to a device.');
+    }
+
+    // Format phone number: remove any non-digit characters
+    const cleanNumber = phoneNumber.replace(/\D/g, '');
+    if (!cleanNumber) {
+      throw new Error('Invalid phone number provided.');
+    }
+
+    logger.info(`Requesting WhatsApp pairing code for: ${cleanNumber}`);
+    const code = await this.sock.requestPairingCode(cleanNumber);
+    return code;
+  }
+
 
   /**
    * Initializes Baileys WhatsApp client and registers event hooks
@@ -89,7 +116,7 @@ export class WhatsAppService {
 
       const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: true,
+        printQRInTerminal: false,
         // Disable verbose debug logs from Baileys
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         logger: pino({ level: 'warn' }) as any,
