@@ -31,6 +31,7 @@ export class WhatsAppService {
     return {
       status: this.status,
       qr: this.qrCode,
+      jid: this.sock?.user?.id ? this.sock.user.id.split(':')[0] + '@s.whatsapp.net' : null,
     };
   }
 

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import QRCode from 'qrcode';
 import { auth } from '@clerk/nextjs/server';
+import { SettingsRepository } from '@/repositories/settings';
+import { logger } from '@/utils/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +15,7 @@ export async function GET() {
 
     let status = 'disconnected';
     let qr: string | null = null;
+    let jid: string | null = null;
 
     try {
       const botRes = await fetch('http://localhost:3005/status');
@@ -20,26 +23,44 @@ export async function GET() {
         const data = await botRes.json();
         status = data.status;
         qr = data.qr;
+        jid = data.jid;
       }
     } catch (err) {
-      // Bot is not running or unreachable
       status = 'disconnected';
+    }
+
+    // Auto-link the connected JID to the user's database settings if they scanned a QR code
+    if (status === 'connected' && jid) {
+      try {
+        const settingsRepo = new SettingsRepository();
+        const currentSettings = await settingsRepo.getSettings(userId);
+        if (!currentSettings.whatsappJid || currentSettings.whatsappJid !== jid) {
+          await settingsRepo.updateSettings(userId, {
+            whatsappJid: jid
+          });
+          logger.info(`Automatically linked WhatsApp JID ${jid} to user ${userId} via status check.`);
+        }
+      } catch (dbErr) {
+        logger.error(dbErr, 'Failed to auto-link JID in status check');
+      }
     }
 
     let qrCodeDataUrl: string | null = null;
 
     if (qr) {
       try {
-        // Convert raw QR string to a base64 PNG data URL
         qrCodeDataUrl = await QRCode.toDataURL(qr);
       } catch (error) {
         console.error('Error generating WhatsApp QR code data URL:', error);
       }
     }
 
+    const connectedNumber = jid ? jid.split('@')[0] : null;
+
     return NextResponse.json({
       status,
       qrCode: qrCodeDataUrl,
+      connectedNumber,
     });
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
