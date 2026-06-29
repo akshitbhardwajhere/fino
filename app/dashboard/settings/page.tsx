@@ -486,7 +486,7 @@ export default function SettingsPage() {
           onClick={handleSave}
           disabled={isSaving}
           className={cn(
-            "w-full sm:w-auto gap-2 shadow-md transition-all duration-300 font-semibold active:scale-98 cursor-pointer",
+            "hidden md:inline-flex gap-2 shadow-md transition-all duration-300 font-semibold active:scale-98 cursor-pointer",
             isSaved && "bg-emerald-650 dark:bg-emerald-600"
           )}
         >
@@ -870,6 +870,32 @@ export default function SettingsPage() {
             </CardFooter>
           </Card>
         </div>
+      </div>
+
+      {/* Mobile/Tablet Save Changes Button */}
+      <div className="md:hidden pt-2">
+        <Button
+          onClick={handleSave}
+          disabled={isSaving}
+          className={cn(
+            "w-full gap-2 shadow-md transition-all duration-300 font-semibold active:scale-98 cursor-pointer justify-center",
+            isSaved && "bg-emerald-650 dark:bg-emerald-600"
+          )}
+        >
+          {isSaving ? (
+            <>
+              <RefreshCw className="h-4 w-4 animate-spin" /> Saving...
+            </>
+          ) : isSaved ? (
+            <>
+              <Check className="h-4 w-4" /> Changes Saved!
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" /> Save Changes
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );
